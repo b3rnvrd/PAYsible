@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Connexion - PAYsible</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="login-container">
+        <h1>PAYsible - Connexion</h1>
+        <p>Entre ton adresse e-mail pour accéder à ton espace bancaire.</p>
+
+        {% if message %}
+            <p class="error" style="color:red;">{{ message }}</p>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.email.label_tag }}
+                {{ form.email }}
+                {% for error in form.email.errors %}
+                    <div class="error" style="color:red;">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <button type="submit">Continuer</button>
+        </form>
+    </div>
+</body>
+</html>
