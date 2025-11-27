@@ -11,7 +11,7 @@ Le projet consiste à développer une **application bancaire web** permettant à
 * Créer plusieurs comptes bancaires ;
 
 * Enregistrer des **retraits / dépôts** et des **transferts** entre comptes ;  
-* Vérification du solde avant de faire un retrait ou un transfert (à définir selon les règles appliquées aux comptes;
+* Vérification du solde avant de faire un retrait ou un transfert (à définir selon les règles appliquées aux comptes) ;
 
 * Visualiser ses **dépenses mensuelles** via un **dashboard graphique** ;
 
