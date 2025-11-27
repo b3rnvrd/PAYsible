@@ -205,6 +205,3 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-paysible_app/.DS_Store
-paysible/.DS_Store
-.DS_Store
