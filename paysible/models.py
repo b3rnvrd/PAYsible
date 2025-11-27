@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Sum
 
-# il vaut mieux hériter de AbstractUser pour personnaliser l'utilisateur par défaut.
 class User(AbstractUser):
     # 'name', 'last_name', 'email', 'date_joined' sont déjà inclus dans AbstractUser
     phone_number = models.CharField(max_length=20, blank=True, null=True)
@@ -17,7 +16,7 @@ class Account(models.Model):
         ('SAVINGS', 'Épargne'),
     ]
 
-    # Relation : Un User a plusieurs Accounts (One-to-Many)
+    # Relation : one to many avec User
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts')
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='CURRENT')
     creation_date = models.DateTimeField(auto_now_add=True)
