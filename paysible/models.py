@@ -2,62 +2,60 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Sum
 
-class User(AbstractUser):
-    # 'name', 'last_name', 'email', 'date_joined' sont déjà inclus dans AbstractUser
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
+class BankUser(models.Model):
+    # Correspond à CREATE TABLE user_
+    id = models.CharField(max_length=50, primary_key=True)
+    name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    phone_number = models.BigIntegerField()
+    adresse = models.CharField(max_length=50)
+    email = models.CharField(max_length=50)
+    creation_date = models.DateField()
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.name} {self.last_name}"
 
-class Account(models.Model):
-    TYPE_CHOICES = [
-        ('CURRENT', 'Compte Courant'),
-        ('SAVINGS', 'Épargne'),
-    ]
-
-    # Relation : one to many avec User
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts')
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='CURRENT')
-    creation_date = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.get_type_display()} - {self.user.username}"
-
-    @property
-    def balance(self):
-        """
-        Calcule le solde en sommant toutes les entrées liées à ce compte.
-        """
-        # On somme le champ 'amount' de toutes les transaction_entries liées
-        total = self.entries.aggregate(Sum('amount'))['amount__sum']
-        return total or 0  # Retourne 0 si aucune transaction
+    class Meta:
+        db_table = 'user_'
 
 class Transaction(models.Model):
-    TRANSACTION_TYPES = [
-        ('TRANSFER', 'Virement'),
-        ('PAYMENT', 'Paiement'),
-        ('DEPOSIT', 'Dépôt'),
-    ]
-
-    type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    date = models.DateTimeField(auto_now_add=True)
-    description = models.TextField(blank=True)
+    # Correspond à CREATE TABLE Transaction
+    id_transaction = models.IntegerField(primary_key=True)
+    type = models.CharField(max_length=50)
+    amount = models.BigIntegerField()
+    
+    # CORRECTION ICI : Le champ Python s'appelle 'date', mais la colonne SQL reste 'date_'
+    date = models.DateField(db_column='date_') 
+    
+    description = models.CharField(max_length=500, db_column='Description')
 
     def __str__(self):
-        return f"Transaction {self.id} - {self.date}"
+        return f"Transac {self.id_transaction} - {self.type}"
+
+    class Meta:
+        db_table = 'Transaction'
+
+class Account(models.Model):
+    # Correspond à CREATE TABLE account
+    id = models.IntegerField(primary_key=True)
+    type = models.CharField(max_length=50)
+    user = models.ForeignKey(BankUser, on_delete=models.CASCADE, db_column='id_1')
+
+    def __str__(self):
+        return f"Compte {self.id} ({self.type})"
+
+    class Meta:
+        db_table = 'account'
 
 class TransactionEntry(models.Model):
-    ENTRY_TYPES = [
-        ('DEBIT', 'Débit'),
-        ('CREDIT', 'Crédit'),
-    ]
-    account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name='entries')
-    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='entries')
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    type = models.CharField(max_length=10, choices=ENTRY_TYPES)
-    description = models.CharField(max_length=255, blank=True)
+    # Correspond à CREATE TABLE transaction_entries
+    id = models.IntegerField(primary_key=True)
+    amount = models.IntegerField()
+    account_id_val = models.IntegerField(db_column='account_id')
+    type = models.CharField(max_length=100)
+    description = models.CharField(max_length=500)
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, db_column='id_transaction')
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, db_column='id_1')
 
-    def __str__(self):
-        return f"{self.type} : {self.amount}€ sur {self.account}"
+    class Meta:
+        db_table = 'transaction_entries'

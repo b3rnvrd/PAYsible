@@ -17,9 +17,11 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from paysible import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     # Route homepage requests to the paysible app so index.html renders
     path('', include('paysible.urls')),
+    path('', views.index, name='index'),
 ]
