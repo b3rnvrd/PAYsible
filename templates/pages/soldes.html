@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenue sur votre solde {{ owner }}</title>
+
+></head>
+<body>
+
+<h1>Détail du compte numéro {{ id }}</h1>
+<p>Bonjour {{ owner }}, vous avez un compte de type {{ type }} et voici vos dernières transactions : </p>
+
+<ul>
+    {% for transaction in transactions %}
+        <li>{{ transaction }}</li>
+    {% endfor %}
+
+</ul>
+
+</body>
+</html>
