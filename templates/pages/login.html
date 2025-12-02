@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Connexion - PAYsible{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+
+            <h1 class="section-title mb-4 text-center">Connexion</h1>
+            <p class="text-muted text-center mb-4">
+                Entre ton adresse e-mail pour accéder à ton espace PAYsible.
+            </p>
+
+            {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="post" action="/login">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Adresse e-mail</label>
+                    <input
+                        type="email"
+                        class="form-control"
+                        id="email"
+                        name="email"
+                        required
+                        placeholder="prenom.nom@example.com"
+                        value="{{ user_email or '' }}"
+                    >
+                    <div class="form-text">
+                        Authentification simplifiée : aucune validation complexe n'est appliquée.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary-paysible w-100">
+                    Continuer
+                </button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="/">⬅ Retour à l'accueil</a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
