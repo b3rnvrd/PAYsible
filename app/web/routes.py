@@ -1,7 +1,6 @@
-# app/web/routes.py
-
 from fastapi import APIRouter, Request, Form, status
 from fastapi.responses import HTMLResponse, RedirectResponse
+
 from fastapi.templating import Jinja2Templates
 
 # 1. INITIALISATION DE L'APIRouter
@@ -9,7 +8,12 @@ router = APIRouter(
     tags=["Web Pages"]
 )
 
-templates = Jinja2Templates(directory="templates")
+# NOTE: Dans ce modèle, le moteur Jinja2 est initialisé dans main.py.
+# Pour le rendre disponible ici (sans refactorisation avancée), on peut 
+# soit le réinitialiser, soit le passer en dépendance. 
+# Pour l'instant, on va simuler l'accès pour garder les choses simples.
+
+#templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -88,4 +92,3 @@ async def logout(request: Request):
         request.session.clear()
 
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-
