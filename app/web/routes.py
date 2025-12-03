@@ -43,12 +43,116 @@ fake_user_data = {
 async def homepage(request: Request):
     """
     Page d'accueil principale.
-    On récupère l'email stocké en session (si présent) pour éventuellement personnaliser la page.
+    Si l'utilisateur est connecté, affiche la page home.html avec ses comptes.
+    Sinon, affiche la page de landing publique (index.html).
     """
     user_email = None
     if hasattr(request, "session"):
         user_email = request.session.get("user_email")
 
+    # Si l'utilisateur est connecté, afficher la page home avec ses comptes
+    if user_email:
+        from datetime import datetime
+        
+        main_account = {
+            "id": "ACC001",
+            "type": "Compte Courant",
+            "balance": "2,450.75",
+            "is_main": True
+        }
+        
+        accounts = [
+            {
+                "id": "ACC001",
+                "type": "Compte Courant",
+                "balance": "2,450.75",
+                "is_main": True
+            },
+            {
+                "id": "ACC002",
+                "type": "Compte Épargne",
+                "balance": "5,320.00",
+                "is_main": False
+            },
+            {
+                "id": "ACC003",
+                "type": "Compte Professionnel",
+                "balance": "1,890.50",
+                "is_main": False
+            }
+        ]
+        
+        transactions = [
+            {
+                "date": "01/12/2025",
+                "description": "Salaire",
+                "details": "Virement mensuel",
+                "account_id": "ACC001",
+                "amount": 2500.00,
+                "status": "completed",
+                "status_label": "Complété"
+            },
+            {
+                "date": "29/11/2025",
+                "description": "Supermarché",
+                "details": "Carrefour - Courses",
+                "account_id": "ACC001",
+                "amount": -85.30,
+                "status": "completed",
+                "status_label": "Complété"
+            },
+            {
+                "date": "28/11/2025",
+                "description": "Transfert épargne",
+                "details": "Épargne automatique",
+                "account_id": "ACC002",
+                "amount": 200.00,
+                "status": "completed",
+                "status_label": "Complété"
+            },
+            {
+                "date": "27/11/2025",
+                "description": "Abonnement Netflix",
+                "details": "Prélèvement mensuel",
+                "account_id": "ACC001",
+                "amount": -13.49,
+                "status": "completed",
+                "status_label": "Complété"
+            },
+            {
+                "date": "26/11/2025",
+                "description": "Facture électricité",
+                "details": "EDF - Novembre",
+                "account_id": "ACC001",
+                "amount": -120.00,
+                "status": "pending",
+                "status_label": "En attente"
+            }
+        ]
+        
+        stats = {
+            "total_income": "2,500.00",
+            "total_expenses": "218.79",
+            "transaction_count": 12
+        }
+        
+        current_date = datetime.now().strftime("%d/%m/%Y")
+        
+        return templates.TemplateResponse(
+            "pages/home.html",
+            {
+                "request": request,
+                "user_email": user_email,
+                "user_name": user_email.split("@")[0].capitalize(),
+                "main_account": main_account,
+                "accounts": accounts,
+                "transactions": transactions,
+                "stats": stats,
+                "current_date": current_date
+            }
+        )
+    
+    # Sinon, afficher la page de landing publique
     return templates.TemplateResponse(
         "index.html",
         {
@@ -133,5 +237,16 @@ async def view_soldes(request: Request):
             "transactions": sorted(fake_user_data["transactions"], key=lambda x: x["date"], reverse=True),
             "total_balance": total_balance,
             "title": "Mes Comptes"
+@router.get("/beneficiaries", response_class=HTMLResponse, name="view_beneficiaries")
+def view_beneficiaries(request: Request):
+    # ICI : On simule un utilisateur connecté pour l'instant
+    # Plus tard, tu récupéreras le vrai utilisateur via les cookies/sessions
+    user_email = "client@paysible.com" 
+
+    return templates.TemplateResponse(
+        "pages/beneficiaries.html", 
+        {
+            "request": request, 
+            "user_email": user_email  # <--- C'est la clé magique pour activer le menu
         }
     )
