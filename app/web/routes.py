@@ -13,7 +13,7 @@ router = APIRouter(
 # soit le réinitialiser, soit le passer en dépendance. 
 # Pour l'instant, on va simuler l'accès pour garder les choses simples.
 
-#templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/", response_class=HTMLResponse)
