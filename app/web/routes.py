@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Request, Form, status
+from fastapi import APIRouter, Request, Form, status, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+
+from app.models.account import AccountDB
+from app.models.user import UserDB
+
 
 # 1. INITIALISATION DE L'APIRouter
 router = APIRouter(
@@ -221,15 +228,23 @@ async def logout(request: Request):
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 @router.get("/soldes", response_class=HTMLResponse, name="view_soldes")
-async def view_soldes(request: Request):
+async def view_soldes(request: Request, db: Session = Depends(get_db)):
 
     user_email = request.session.get ("user_email","admin@paysible.com")
     user_name = user_email.split("@")[0].capitalize()
 
-    if hasattr(request, "session"):
-        user_email = request.session.get("user_email")
+    user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    accounts_list = []
+    transactions_list = []
+    total_balance = 0.0
+    if user :
+        accounts_list = user.accounts
+        for acc in accounts_list:
+            transactions_list.extend(acc.transactions)
+            total_balance += acc.balance
 
-    total_balance = sum(acc["balance"] for acc in fake_user_data["accounts"])
+        # Tri transactions
+        transactions_list.sort(key=lambda x: x.date, reverse=True)
 
     return templates.TemplateResponse(
         "pages/soldes.html",
@@ -237,8 +252,8 @@ async def view_soldes(request: Request):
             "request": request,
             "user_email": user_email,
             "user_name": user_name,
-            "accounts": fake_user_data["accounts"],
-            "transactions": sorted(fake_user_data["transactions"], key=lambda x: x["date"], reverse=True),
+            "accounts": accounts_list,
+            "transactions": transactions_list,
             "total_balance": total_balance,
             "title": "Mes Comptes"
 
