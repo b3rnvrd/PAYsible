@@ -253,3 +253,26 @@ def view_beneficiaries(request: Request):
             "user_email": user_email  # <--- C'est la clé magique pour activer le menu
         }
     )
+
+
+@router.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """
+    Affiche la page des paramètres utilisateur.
+    """
+    user_email = None
+    if hasattr(request, "session"):
+        user_email = request.session.get("user_email")
+
+    # Vérifier si l'utilisateur est connecté
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    return templates.TemplateResponse(
+        "pages/settings.html",
+        {
+            "request": request,
+            "title": "Paramètres - PAYsible",
+            "user_email": user_email,
+        },
+    )

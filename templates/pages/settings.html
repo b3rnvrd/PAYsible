@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Paramètres - PAYsible{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/settings.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Navigation latérale -->
+        <div class="col-md-3">
+            <div class="settings-nav">
+                <h4 class="section-title mb-3">
+                    <i class="bi bi-gear-fill"></i> Paramètres
+                </h4>
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#" data-section="profile">
+                        <i class="bi bi-person-circle"></i> Mon Profil
+                    </a>
+                    <a class="nav-link" href="#" data-section="accounts">
+                        <i class="bi bi-bank"></i> Mes Comptes
+                    </a>
+                    <a class="nav-link" href="#" data-section="app-settings">
+                        <i class="bi bi-sliders"></i> Préférences
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9">
+            
+            <!-- Section : Mon Profil -->
+            <div id="profile" class="settings-section active">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-gradient-paysible text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-circle"></i> Mes Informations</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="profile-alert" class="alert d-none" role="alert"></div>
+                        
+                        <form id="profile-form">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="first_name" class="form-label">Prénom</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" placeholder="Votre prénom">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="last_name" class="form-label">Nom</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Votre nom">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" readonly>
+                                <small class="form-text text-muted">L'email ne peut pas être modifié</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+33 6 00 00 00 00">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Adresse</label>
+                                <textarea class="form-control" id="address" name="address" rows="3" placeholder="Votre adresse complète"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary-paysible">
+                                <i class="bi bi-save"></i> Enregistrer les modifications
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section : Mes Comptes -->
+            <div id="accounts" class="settings-section">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="section-title mb-0">
+                        <i class="bi bi-bank"></i> Gestion des Comptes
+                    </h4>
+                    <button class="btn btn-primary-paysible" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                        <i class="bi bi-plus-circle"></i> Nouveau Compte
+                    </button>
+                </div>
+                
+                <div id="accounts-alert" class="alert d-none" role="alert"></div>
+                
+                <div id="accounts-list" class="row">
+                    <!-- Les comptes seront chargés dynamiquement ici -->
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section : Préférences -->
+            <div id="app-settings" class="settings-section">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-gradient-paysible text-white">
+                        <h5 class="mb-0"><i class="bi bi-sliders"></i> Préférences de l'Application</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="settings-alert" class="alert d-none" role="alert"></div>
+                        
+                        <form id="app-settings-form">
+                            <h6 class="mb-3 text-primary-paysible">Notifications</h6>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notif_transactions" checked>
+                                <label class="form-check-label" for="notif_transactions">
+                                    Recevoir des notifications pour les transactions
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notif_email" checked>
+                                <label class="form-check-label" for="notif_email">
+                                    Recevoir des résumés par email
+                                </label>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <h6 class="mb-3 text-primary-paysible">Affichage</h6>
+                            
+                            <div class="mb-3">
+                                <label for="currency" class="form-label">Devise par défaut</label>
+                                <select class="form-select" id="currency">
+                                    <option value="EUR" selected>Euro (€)</option>
+                                    <option value="USD">Dollar ($)</option>
+                                    <option value="GBP">Livre Sterling (£)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="language" class="form-label">Langue</label>
+                                <select class="form-select" id="language">
+                                    <option value="fr" selected>Français</option>
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                </select>
+                            </div>
+                            
+                            <hr class="my-4">
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Modal : Ajouter un compte -->
+<div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-paysible text-white">
+                <h5 class="modal-title" id="addAccountModalLabel">
+                    <i class="bi bi-plus-circle"></i> Ouvrir un nouveau compte
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-account-form">
+                    <div class="mb-3">
+                        <label for="account_label" class="form-label">Nom du compte</label>
+                        <input type="text" class="form-control" id="account_label" name="label" required placeholder="Ex: Compte Principal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="account_type" class="form-label">Type de compte</label>
+                        <select class="form-select" id="account_type" name="type" required>
+                            <option value="">Sélectionnez un type</option>
+                            <option value="CHECKING">Compte Courant</option>
+                            <option value="SAVINGS">Compte Épargne</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Un IBAN sera généré automatiquement lors de la création du compte.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary-paysible" id="btn-create-account">
+                    <i class="bi bi-check-circle"></i> Créer le compte
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal : Modifier un compte -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-paysible text-white">
+                <h5 class="modal-title" id="editAccountModalLabel">
+                    <i class="bi bi-pencil"></i> Modifier le compte
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-account-form">
+                    <input type="hidden" id="edit_account_id" name="account_id">
+                    <div class="mb-3">
+                        <label for="edit_account_label" class="form-label">Nom du compte</label>
+                        <input type="text" class="form-control" id="edit_account_label" name="label" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary-paysible" id="btn-update-account">
+                    <i class="bi bi-check-circle"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ request.url_for('static', path='js/settings.js') }}"></script>
+{% endblock %}
