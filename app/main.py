@@ -37,3 +37,16 @@ app.include_router(api_routers.router, prefix="/api")
 @app.get("/status")
 def get_status():
     return {"status": "OK", "version": app.version}
+
+
+
+# ... vos imports existants ...
+from app.database import engine, Base
+# Importez vos modèles pour qu'ils soient reconnus lors de la création
+from app.models import orm 
+
+# Créez les tables (à placer avant la définition de 'app = FastAPI(...)')
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(...) 
+# ... suite du fichier ...
