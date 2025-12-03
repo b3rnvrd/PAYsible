@@ -258,3 +258,100 @@ body {
 .alert-info {
     border-left-color: var(--info-color);
 }
+
+/* ===========
+   PAGE 404 
+============ */
+
+/* On applique le style directement sur le body pour supprimer le cadre */
+body.error-page {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; /* Empêche le scroll */
+    background-color: #000;
+    
+    /* L'image de fond est maintenant ici */
+    background-image: url('/static/img/404background.jpeg');
+    background-size: cover;  /* L'image s'étire pour couvrir tout l'écran */
+    background-position: center center;
+    background-repeat: no-repeat;
+    
+    /* Pour centrer les éléments enfants par défaut */
+    position: relative; 
+}
+
+/* On supprime les anciens conteneurs qui bloquaient la taille */
+.container-404, .block404 {
+    display: none; /* Juste au cas où, mais on ne les utilisera plus dans le HTML */
+}
+
+/* L'astronaute */
+.obj {
+    position: absolute;
+    width: 204px;
+    height: 209px;
+    top: 50%;
+    left: 50%;
+    /* Centrage parfait + Animation */
+    margin-left: -102px; 
+    margin-top: -104px;
+    animation: floating-astronaut 6s infinite ease-in-out;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.obj img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Le texte 404 */
+.t404 {
+    position: absolute;
+    width: 364px;
+    height: 146px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-image: url('/static/img/404.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 20;
+}
+
+/* Bouton Retour */
+.btn-return {
+    position: absolute;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    padding: 12px 30px;
+    text-decoration: none;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    font-family: sans-serif;
+}
+
+.btn-return:hover {
+    background: white;
+    color: black;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+}
+
+/* Animation fluide (60fps) */
+@keyframes floating-astronaut {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-10px, -15px) rotate(-3deg); }
+}
