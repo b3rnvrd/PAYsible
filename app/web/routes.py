@@ -237,6 +237,9 @@ async def view_soldes(request: Request):
             "transactions": sorted(fake_user_data["transactions"], key=lambda x: x["date"], reverse=True),
             "total_balance": total_balance,
             "title": "Mes Comptes"
+
+        }
+    )
 @router.get("/beneficiaries", response_class=HTMLResponse, name="view_beneficiaries")
 def view_beneficiaries(request: Request):
     # ICI : On simule un utilisateur connecté pour l'instant
