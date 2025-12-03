@@ -1,6 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from typing import Optional
+
+from app.core.database import get_db
+from app.models.user import UserDB
 
 router = APIRouter(
     prefix="/users",
@@ -11,10 +15,13 @@ router = APIRouter(
 class UserResponse(BaseModel):
     id: int
     email: str
-    first_name: Optional[str] = None
+    first_name: Optional[str] = None  # Mappé depuis 'name'
     last_name: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = None  # Mappé depuis 'phone_number'
     address: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
@@ -22,46 +29,65 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
 
-# Mock user pour la démo (à remplacer par une vraie base de données)
-MOCK_USER = {
-    "id": 1,
-    "email": "demo@paysible.com",
-    "first_name": "Jean",
-    "last_name": "Dupont",
-    "phone": "+33 6 00 00 00 00",
-    "address": "123 Rue de la Paix, 75000 Paris"
-}
-
 
 @router.get("/me/", response_model=UserResponse)
-async def get_current_user():
+async def get_current_user(db: Session = Depends(get_db)):
     """
     Récupère les informations de l'utilisateur connecté (Profil).
     
     Endpoint: GET /api/users/me/
     """
-    return MOCK_USER
+    # Pour la démo, on prend le premier utilisateur
+    # Dans une vraie app, on utiliserait l'ID de session ou un token JWT
+    user = db.query(UserDB).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Mapper les champs de la DB vers le schéma de réponse
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        first_name=user.name,
+        last_name=user.last_name,
+        phone=user.phone_number,
+        address=user.address
+    )
 
 
 @router.patch("/me/", response_model=UserResponse)
-async def update_current_user(user_update: UserUpdate):
+async def update_current_user(user_update: UserUpdate, db: Session = Depends(get_db)):
     """
     Modifie les informations de l'utilisateur connecté.
     
     Endpoint: PATCH /api/users/me/
     Payload: { "address": "...", "phone": "...", "first_name": "...", "last_name": "..." }
     """
-    # Dans une vraie application, on mettrait à jour la base de données
-    # Ici, on simule la mise à jour
-    global MOCK_USER
+    # Pour la démo, on prend le premier utilisateur
+    user = db.query(UserDB).first()
     
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    # Mettre à jour uniquement les champs fournis
     if user_update.first_name is not None:
-        MOCK_USER["first_name"] = user_update.first_name
+        user.name = user_update.first_name
     if user_update.last_name is not None:
-        MOCK_USER["last_name"] = user_update.last_name
+        user.last_name = user_update.last_name
     if user_update.phone is not None:
-        MOCK_USER["phone"] = user_update.phone
+        user.phone_number = user_update.phone
     if user_update.address is not None:
-        MOCK_USER["address"] = user_update.address
+        user.address = user_update.address
     
-    return MOCK_USER
+    db.commit()
+    db.refresh(user)
+    
+    # Retourner le résultat avec les bons noms de champs
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        first_name=user.name,
+        last_name=user.last_name,
+        phone=user.phone_number,
+        address=user.address
+    )
