@@ -92,3 +92,19 @@ async def logout(request: Request):
         request.session.clear()
 
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    # Pour que cela fonctionne, vous devez aussi avoir un fichier templates/index.html
+    return templates.TemplateResponse("index.html", {"request": request, "title": "Accueil PAYsible"})
+
+@router.get("/beneficiaries", response_class=HTMLResponse, name="view_beneficiaries")
+def view_beneficiaries(request: Request):
+    # ICI : On simule un utilisateur connecté pour l'instant
+    # Plus tard, tu récupéreras le vrai utilisateur via les cookies/sessions
+    user_email = "client@paysible.com" 
+
+    return templates.TemplateResponse(
+        "pages/beneficiaries.html", 
+        {
+            "request": request, 
+            "user_email": user_email
+        }
+    )
