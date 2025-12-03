@@ -10,6 +10,9 @@
             <div class="card bg-gradient-paysible text-white shadow-lg">
                 <div class="card-body p-4 text-center">
                     <h5 class="card-title opacity-75">Solde Total Cumulé</h5>
+                    <h2 class="fw-bold text-primary-paysible">
+                        Bienvenue, {{ user_name }} !
+                    </h2>
                     <h1 class="display-4 fw-bold">{{ "%.2f"|format(total_balance) }} €</h1>
                     <p class="card-text"><i class="bi bi-wallet2"></i> Disponible sur tous vos comptes</p>
                 </div>

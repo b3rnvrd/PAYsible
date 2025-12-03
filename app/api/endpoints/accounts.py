@@ -5,33 +5,9 @@ from datetime import datetime
 import random
 import string
 
-router = APIRouter(
-    prefix="/accounts",
-    tags=["Accounts"]
-)
-
-# Schémas Pydantic
-class AccountCreate(BaseModel):
-    label: str
-    type: str  # CHECKING ou SAVINGS
-
-class AccountUpdate(BaseModel):
-    label: str
-
-class AccountResponse(BaseModel):
-    id: int
-    label: str
-    type: str
-    iban: str
-    created_at: str
-    is_active: bool = True
-
-class AccountBalanceResponse(BaseModel):
-    account_id: int
-    balance: float
-
 
 # Mock data pour la démo (à remplacer par une vraie base de données)
+
 MOCK_ACCOUNTS = [
     {
         "id": 1,
@@ -58,6 +34,33 @@ MOCK_BALANCES = {
 }
 
 next_account_id = 3
+
+router = APIRouter(
+    prefix="/accounts",
+    tags=["Accounts"]
+)
+
+# Schémas Pydantic
+class AccountCreate(BaseModel):
+    label: str
+    type: str  # CHECKING ou SAVINGS
+
+class AccountUpdate(BaseModel):
+    label: str
+
+class AccountResponse(BaseModel):
+    id: int
+    label: str
+    type: str
+    iban: str
+    created_at: str
+    is_active: bool = True
+
+class AccountBalanceResponse(BaseModel):
+    account_id: int
+    balance: float
+
+
 
 
 def generate_iban():

@@ -222,7 +222,10 @@ async def logout(request: Request):
 
 @router.get("/soldes", response_class=HTMLResponse, name="view_soldes")
 async def view_soldes(request: Request):
-    user_email = None
+
+    user_email = request.session.get ("user_email","admin@paysible.com")
+    user_name = user_email.split("@")[0].capitalize()
+
     if hasattr(request, "session"):
         user_email = request.session.get("user_email")
 
@@ -233,6 +236,7 @@ async def view_soldes(request: Request):
         {
             "request": request,
             "user_email": user_email,
+            "user_name": user_name,
             "accounts": fake_user_data["accounts"],
             "transactions": sorted(fake_user_data["transactions"], key=lambda x: x["date"], reverse=True),
             "total_balance": total_balance,
