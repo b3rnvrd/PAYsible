@@ -5,8 +5,8 @@ router = APIRouter(prefix="/accounts",tags=["Comptes"])
 templates = Jinja2Templates(directory="templates")
 
 fake_db_accounts = {
-    1: {"owner": "Yzheng", "type": "Courant", "transactions": [100, -50, -20, 500]},
-    2: {"owner": "Yzheng", "type": "Livret A", "transactions": [5000, 100]},
+    1: {"owner": "test", "type": "Courant", "transactions": [100, -50, -20, 500]},
+    2: {"owner": "test", "type": "Livret A", "transactions": [5000, 100]},
     3: {"owner": "Elon Musk", "type": "Courant", "transactions": [999999, -1]},
 }
 
