@@ -1,39 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import func
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import random
 import string
 
-
-# Mock data pour la démo (à remplacer par une vraie base de données)
-
-MOCK_ACCOUNTS = [
-    {
-        "id": 1,
-        "label": "Compte Principal",
-        "type": "CHECKING",
-        "iban": "FR76 1234 5678 9012 3456 7890 123",
-        "created_at": "2024-01-15T10:30:00",
-        "is_active": True
-    },
-    {
-        "id": 2,
-        "label": "Livret A",
-        "type": "SAVINGS",
-        "iban": "FR76 9876 5432 1098 7654 3210 987",
-        "created_at": "2024-02-20T14:45:00",
-        "is_active": True
-    }
-]
-
-# Mock balances
-MOCK_BALANCES = {
-    1: 2543.78,
-    2: 15678.90
-}
-
-next_account_id = 3
+from app.core.database import get_db
+from app.models.account import AccountDB
+from app.models.transaction import TransactionEntryDB
 
 router = APIRouter(
     prefix="/accounts",
@@ -53,14 +29,15 @@ class AccountResponse(BaseModel):
     label: str
     type: str
     iban: str
-    created_at: str
+    created_at: Optional[str] = None
     is_active: bool = True
+
+    class Config:
+        from_attributes = True
 
 class AccountBalanceResponse(BaseModel):
     account_id: int
     balance: float
-
-
 
 
 def generate_iban():
@@ -71,126 +48,170 @@ def generate_iban():
 
 
 @router.get("/", response_model=List[AccountResponse])
-async def get_accounts():
+async def get_accounts(db: Session = Depends(get_db)):
     """
     Lister tous les comptes de l'utilisateur.
     
     Endpoint: GET /api/accounts/
     """
-    # Filtrer uniquement les comptes actifs
-    return [acc for acc in MOCK_ACCOUNTS if acc["is_active"]]
+    # Pour la démo, on prend tous les comptes du premier utilisateur
+    # Dans une vraie app, on filtrerait par l'utilisateur connecté
+    accounts = db.query(AccountDB).filter(AccountDB.user_id == 1).all()
+    
+    # Créer la réponse avec les champs nécessaires
+    result = []
+    for acc in accounts:
+        result.append(AccountResponse(
+            id=acc.id,
+            label=f"Compte {acc.type}",  # Label générique basé sur le type
+            type=acc.type,
+            iban=acc.iban,
+            created_at=datetime.now().isoformat(),  # Pas de champ created_at dans la DB
+            is_active=True
+        ))
+    
+    return result
 
 
 @router.post("/", response_model=AccountResponse)
-async def create_account(account: AccountCreate):
+async def create_account(account: AccountCreate, db: Session = Depends(get_db)):
     """
     Ouvrir un compte (Courant ou Épargne).
     
     Endpoint: POST /api/accounts/
     Payload: { "label": "Compte Joint", "type": "CHECKING" }
     """
-    global next_account_id
-    
     # Validation du type
-    if account.type not in ["CHECKING", "SAVINGS"]:
-        raise HTTPException(status_code=400, detail="Type de compte invalide. Utilisez CHECKING ou SAVINGS.")
+    if account.type not in ["CHECKING", "SAVINGS", "Courant", "Epargne"]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Type de compte invalide. Utilisez CHECKING, SAVINGS, Courant ou Epargne."
+        )
+    
+    # Normaliser le type
+    account_type = account.type
+    if account.type == "CHECKING":
+        account_type = "Courant"
+    elif account.type == "SAVINGS":
+        account_type = "Epargne"
     
     # Créer le nouveau compte
-    new_account = {
-        "id": next_account_id,
-        "label": account.label,
-        "type": account.type,
-        "iban": generate_iban(),
-        "created_at": datetime.now().isoformat(),
-        "is_active": True
-    }
+    new_account = AccountDB(
+        type=account_type,
+        iban=generate_iban(),
+        user_id=1  # Pour la démo, on utilise l'utilisateur ID 1
+    )
     
-    MOCK_ACCOUNTS.append(new_account)
-    MOCK_BALANCES[next_account_id] = 0.0
-    next_account_id += 1
+    db.add(new_account)
+    db.commit()
+    db.refresh(new_account)
     
-    return new_account
+    return AccountResponse(
+        id=new_account.id,
+        label=account.label,
+        type=account.type,  # Retourner le type demandé (CHECKING/SAVINGS)
+        iban=new_account.iban,
+        created_at=datetime.now().isoformat(),
+        is_active=True
+    )
 
 
 @router.get("/{account_id}/", response_model=AccountResponse)
-async def get_account(account_id: int):
+async def get_account(account_id: int, db: Session = Depends(get_db)):
     """
     Détails d'un compte (IBAN, Date de création).
     
     Endpoint: GET /api/accounts/{id}/
     """
-    account = next((acc for acc in MOCK_ACCOUNTS if acc["id"] == account_id), None)
+    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
     
-    if not account["is_active"]:
-        raise HTTPException(status_code=404, detail="Compte clôturé.")
+    # Convertir le type de la DB vers le format API
+    api_type = "CHECKING" if account.type == "Courant" else "SAVINGS"
     
-    return account
+    return AccountResponse(
+        id=account.id,
+        label=f"Compte {account.type}",
+        type=api_type,
+        iban=account.iban,
+        created_at=datetime.now().isoformat(),
+        is_active=True
+    )
 
 
 @router.patch("/{account_id}/", response_model=AccountResponse)
-async def update_account(account_id: int, account_update: AccountUpdate):
+async def update_account(account_id: int, account_update: AccountUpdate, db: Session = Depends(get_db)):
     """
     Renommer le compte.
     
     Endpoint: PATCH /api/accounts/{id}/
     Payload: { "label": "Nouveau nom" }
     """
-    account = next((acc for acc in MOCK_ACCOUNTS if acc["id"] == account_id), None)
+    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
     
-    if not account["is_active"]:
-        raise HTTPException(status_code=404, detail="Compte clôturé.")
+    # Note: La table accounts n'a pas de champ 'label' dans paysible.db
+    # On ne peut que retourner le compte avec le nouveau label en mémoire
+    # Pour une vraie implementation, il faudrait ajouter une colonne 'label' à la table
     
-    # Mettre à jour le label
-    account["label"] = account_update.label
+    api_type = "CHECKING" if account.type == "Courant" else "SAVINGS"
     
-    return account
+    return AccountResponse(
+        id=account.id,
+        label=account_update.label,  # Le label n'est pas sauvegardé en DB
+        type=api_type,
+        iban=account.iban,
+        created_at=datetime.now().isoformat(),
+        is_active=True
+    )
 
 
 @router.delete("/{account_id}/")
-async def delete_account(account_id: int):
+async def delete_account(account_id: int, db: Session = Depends(get_db)):
     """
-    Clôturer le compte (Soft delete).
+    Clôturer le compte (Suppression).
     
     Endpoint: DELETE /api/accounts/{id}/
     """
-    account = next((acc for acc in MOCK_ACCOUNTS if acc["id"] == account_id), None)
+    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
     
-    if not account["is_active"]:
-        raise HTTPException(status_code=404, detail="Compte déjà clôturé.")
+    # Suppression du compte (pas de soft delete dans la table actuelle)
+    label = f"Compte {account.type}"
+    db.delete(account)
+    db.commit()
     
-    # Soft delete
-    account["is_active"] = False
-    
-    return {"message": f"Compte {account['label']} clôturé avec succès."}
+    return {"message": f"{label} clôturé avec succès."}
 
 
 @router.get("/{account_id}/balance/", response_model=AccountBalanceResponse)
-async def get_account_balance(account_id: int):
+async def get_account_balance(account_id: int, db: Session = Depends(get_db)):
     """
     Calcul du solde (Agrégation des transactions).
     
     Endpoint: GET /api/accounts/{id}/balance/
     """
-    account = next((acc for acc in MOCK_ACCOUNTS if acc["id"] == account_id), None)
+    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
     
-    if not account["is_active"]:
-        raise HTTPException(status_code=404, detail="Compte clôturé.")
+    # Calculer le solde en agrégeant les transaction_entries
+    balance_result = db.query(
+        func.sum(TransactionEntryDB.amount)
+    ).filter(
+        TransactionEntryDB.account_id == account_id
+    ).scalar()
     
-    balance = MOCK_BALANCES.get(account_id, 0.0)
+    balance = float(balance_result) if balance_result else 0.0
     
-    return {
-        "account_id": account_id,
-        "balance": balance
-    }
+    return AccountBalanceResponse(
+        account_id=account_id,
+        balance=balance
+    )
