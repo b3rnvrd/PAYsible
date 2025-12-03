@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Mon Compte - PAYsible{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- En-tête avec information utilisateur -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="section-title mb-2">Bienvenue, {{ user_name or user_email }}</h1>
+                    <p class="text-muted">Voici un aperçu de vos comptes et transactions</p>
+                </div>
+                <div>
+                    <span class="badge bg-primary-paysible px-3 py-2">
+                        <i class="bi bi-calendar-check"></i> {{ current_date }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compte Principal -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-paysible text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-wallet2"></i> Compte Principal
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="text-muted mb-2">{{ main_account.type or 'Compte Courant' }}</h6>
+                            <h2 class="text-primary-paysible mb-2">
+                                <strong>{{ main_account.balance or '0.00' }} €</strong>
+                            </h2>
+                            <p class="mb-0 text-muted">
+                                <small>Compte N° {{ main_account.id or 'XXXXXX' }}</small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <a href="#" class="btn btn-primary-paysible mb-2 w-100">
+                                <i class="bi bi-plus-circle"></i> Nouveau paiement
+                            </a>
+                            <a href="#" class="btn btn-secondary-paysible w-100">
+                                <i class="bi bi-arrow-down-up"></i> Transférer
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aperçu des comptes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="section-title mb-3">
+                <i class="bi bi-bank"></i> Mes Comptes
+            </h4>
+        </div>
+        
+        {% if accounts and accounts|length > 0 %}
+            {% for account in accounts %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="card-subtitle text-muted mb-1">{{ account.type or 'Compte' }}</h6>
+                                <small class="text-muted">N° {{ account.id }}</small>
+                            </div>
+                            <span class="badge {% if account.is_main %}bg-gold-paysible{% else %}bg-secondary{% endif %}">
+                                {% if account.is_main %}Principal{% else %}Secondaire{% endif %}
+                            </span>
+                        </div>
+                        <h4 class="text-primary-paysible mb-3">
+                            <strong>{{ account.balance or '0.00' }} €</strong>
+                        </h4>
+                        <a href="/soldes/{{ account.id }}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-eye"></i> Voir détails
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3 mb-0">Aucun compte supplémentaire trouvé</p>
+                        <a href="#" class="btn btn-primary-paysible mt-3">
+                            <i class="bi bi-plus-circle"></i> Créer un nouveau compte
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Dernières transactions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Dernières Transactions
+                    </h5>
+                    <a href="#" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if transactions and transactions|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Compte</th>
+                                        <th class="text-end">Montant</th>
+                                        <th class="text-center">Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions %}
+                                    <tr>
+                                        <td>
+                                            <small class="text-muted">{{ transaction.date }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ transaction.description or 'Transaction' }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ transaction.details or '' }}</small>
+                                        </td>
+                                        <td>
+                                            <small>N° {{ transaction.account_id }}</small>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="{% if transaction.amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                                {% if transaction.amount > 0 %}+{% endif %}{{ transaction.amount }} €
+                                            </strong>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge {% if transaction.status == 'completed' %}bg-success{% elif transaction.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                {{ transaction.status_label or transaction.status or 'Complété' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3 mb-0">Aucune transaction récente</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row mt-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="bi bi-arrow-up-circle text-success" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2 mb-1">{{ stats.total_income or '0.00' }} €</h5>
+                    <p class="text-muted mb-0"><small>Revenus ce mois</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="bi bi-arrow-down-circle text-danger" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2 mb-1">{{ stats.total_expenses or '0.00' }} €</h5>
+                    <p class="text-muted mb-0"><small>Dépenses ce mois</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="bi bi-bar-chart text-blue-paysible" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2 mb-1">{{ stats.transaction_count or '0' }}</h5>
+                    <p class="text-muted mb-0"><small>Transactions ce mois</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bg-gold-paysible {
+        background-color: var(--accent-gold) !important;
+        color: var(--primary-color) !important;
+    }
+</style>
+{% endblock %}
