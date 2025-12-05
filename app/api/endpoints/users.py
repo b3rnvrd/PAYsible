@@ -4,32 +4,13 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.core.database import get_db
+from app.core.dependencies import get_current_user_from_session
 from app.models.user import UserDB
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"]
 )
-
-# Fonction helper pour récupérer l'utilisateur connecté depuis la session
-def get_current_user_from_session(request: Request, db: Session) -> UserDB:
-    """
-    Récupère l'utilisateur connecté depuis la session.
-    Lève une exception si l'utilisateur n'est pas connecté.
-    """
-    user_email = None
-    if hasattr(request, "session"):
-        user_email = request.session.get("user_email")
-    
-    if not user_email:
-        raise HTTPException(status_code=401, detail="Non authentifié")
-    
-    user = db.query(UserDB).filter(UserDB.email == user_email).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    return user
 
 # Schémas Pydantic
 class UserResponse(BaseModel):
