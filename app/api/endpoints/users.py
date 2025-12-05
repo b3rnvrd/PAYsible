@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -10,6 +10,26 @@ router = APIRouter(
     prefix="/users",
     tags=["Users"]
 )
+
+# Fonction helper pour récupérer l'utilisateur connecté depuis la session
+def get_current_user_from_session(request: Request, db: Session) -> UserDB:
+    """
+    Récupère l'utilisateur connecté depuis la session.
+    Lève une exception si l'utilisateur n'est pas connecté.
+    """
+    user_email = None
+    if hasattr(request, "session"):
+        user_email = request.session.get("user_email")
+    
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    
+    user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    return user
 
 # Schémas Pydantic
 class UserResponse(BaseModel):
@@ -31,18 +51,14 @@ class UserUpdate(BaseModel):
 
 
 @router.get("/me/", response_model=UserResponse)
-async def get_current_user(db: Session = Depends(get_db)):
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
     """
     Récupère les informations de l'utilisateur connecté (Profil).
     
     Endpoint: GET /api/users/me/
     """
-    # Pour la démo, on prend le premier utilisateur
-    # Dans une vraie app, on utiliserait l'ID de session ou un token JWT
-    user = db.query(UserDB).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
     
     # Mapper les champs de la DB vers le schéma de réponse
     return UserResponse(
@@ -56,18 +72,15 @@ async def get_current_user(db: Session = Depends(get_db)):
 
 
 @router.patch("/me/", response_model=UserResponse)
-async def update_current_user(user_update: UserUpdate, db: Session = Depends(get_db)):
+async def update_current_user(user_update: UserUpdate, request: Request, db: Session = Depends(get_db)):
     """
     Modifie les informations de l'utilisateur connecté.
     
     Endpoint: PATCH /api/users/me/
     Payload: { "address": "...", "phone": "...", "first_name": "...", "last_name": "..." }
     """
-    # Pour la démo, on prend le premier utilisateur
-    user = db.query(UserDB).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
     
     # Mettre à jour uniquement les champs fournis
     if user_update.first_name is not None:

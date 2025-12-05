@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
@@ -9,12 +9,33 @@ import string
 
 from app.core.database import get_db
 from app.models.account import AccountDB
+from app.models.user import UserDB
 from app.models.transaction import TransactionEntryDB
 
 router = APIRouter(
     prefix="/accounts",
     tags=["Accounts"]
 )
+
+# Fonction helper pour récupérer l'utilisateur connecté depuis la session
+def get_current_user_from_session(request: Request, db: Session) -> UserDB:
+    """
+    Récupère l'utilisateur connecté depuis la session.
+    Lève une exception si l'utilisateur n'est pas connecté.
+    """
+    user_email = None
+    if hasattr(request, "session"):
+        user_email = request.session.get("user_email")
+    
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    
+    user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    return user
 
 # Schémas Pydantic
 class AccountCreate(BaseModel):
@@ -48,15 +69,17 @@ def generate_iban():
 
 
 @router.get("/", response_model=List[AccountResponse])
-async def get_accounts(db: Session = Depends(get_db)):
+async def get_accounts(request: Request, db: Session = Depends(get_db)):
     """
     Lister tous les comptes de l'utilisateur.
     
     Endpoint: GET /api/accounts/
     """
-    # Pour la démo, on prend tous les comptes du premier utilisateur
-    # Dans une vraie app, on filtrerait par l'utilisateur connecté
-    accounts = db.query(AccountDB).filter(AccountDB.user_id == 1).all()
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
+    
+    # Filtrer les comptes par l'utilisateur connecté
+    accounts = db.query(AccountDB).filter(AccountDB.user_id == user.id).all()
     
     # Créer la réponse avec les champs nécessaires
     result = []
@@ -74,13 +97,16 @@ async def get_accounts(db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=AccountResponse)
-async def create_account(account: AccountCreate, db: Session = Depends(get_db)):
+async def create_account(account: AccountCreate, request: Request, db: Session = Depends(get_db)):
     """
     Ouvrir un compte (Courant ou Épargne).
     
     Endpoint: POST /api/accounts/
     Payload: { "label": "Compte Joint", "type": "CHECKING" }
     """
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
+    
     # Validation du type
     if account.type not in ["CHECKING", "SAVINGS", "Courant", "Epargne"]:
         raise HTTPException(
@@ -95,11 +121,11 @@ async def create_account(account: AccountCreate, db: Session = Depends(get_db)):
     elif account.type == "SAVINGS":
         account_type = "Epargne"
     
-    # Créer le nouveau compte
+    # Créer le nouveau compte pour l'utilisateur connecté
     new_account = AccountDB(
         type=account_type,
         iban=generate_iban(),
-        user_id=1  # Pour la démo, on utilise l'utilisateur ID 1
+        user_id=user.id  # Utiliser l'ID de l'utilisateur connecté
     )
     
     db.add(new_account)
@@ -117,13 +143,19 @@ async def create_account(account: AccountCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{account_id}/", response_model=AccountResponse)
-async def get_account(account_id: int, db: Session = Depends(get_db)):
+async def get_account(account_id: int, request: Request, db: Session = Depends(get_db)):
     """
     Détails d'un compte (IBAN, Date de création).
     
     Endpoint: GET /api/accounts/{id}/
     """
-    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
+    
+    account = db.query(AccountDB).filter(
+        AccountDB.id == account_id,
+        AccountDB.user_id == user.id  # Vérifier que le compte appartient à l'utilisateur
+    ).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
@@ -142,14 +174,20 @@ async def get_account(account_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/{account_id}/", response_model=AccountResponse)
-async def update_account(account_id: int, account_update: AccountUpdate, db: Session = Depends(get_db)):
+async def update_account(account_id: int, account_update: AccountUpdate, request: Request, db: Session = Depends(get_db)):
     """
     Renommer le compte.
     
     Endpoint: PATCH /api/accounts/{id}/
     Payload: { "label": "Nouveau nom" }
     """
-    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
+    
+    account = db.query(AccountDB).filter(
+        AccountDB.id == account_id,
+        AccountDB.user_id == user.id  # Vérifier que le compte appartient à l'utilisateur
+    ).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
@@ -171,13 +209,19 @@ async def update_account(account_id: int, account_update: AccountUpdate, db: Ses
 
 
 @router.delete("/{account_id}/")
-async def delete_account(account_id: int, db: Session = Depends(get_db)):
+async def delete_account(account_id: int, request: Request, db: Session = Depends(get_db)):
     """
     Clôturer le compte (Suppression).
     
     Endpoint: DELETE /api/accounts/{id}/
     """
-    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
+    
+    account = db.query(AccountDB).filter(
+        AccountDB.id == account_id,
+        AccountDB.user_id == user.id  # Vérifier que le compte appartient à l'utilisateur
+    ).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
@@ -191,13 +235,19 @@ async def delete_account(account_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{account_id}/balance/", response_model=AccountBalanceResponse)
-async def get_account_balance(account_id: int, db: Session = Depends(get_db)):
+async def get_account_balance(account_id: int, request: Request, db: Session = Depends(get_db)):
     """
     Calcul du solde (Agrégation des transactions).
     
     Endpoint: GET /api/accounts/{id}/balance/
     """
-    account = db.query(AccountDB).filter(AccountDB.id == account_id).first()
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
+    
+    account = db.query(AccountDB).filter(
+        AccountDB.id == account_id,
+        AccountDB.user_id == user.id  # Vérifier que le compte appartient à l'utilisateur
+    ).first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
