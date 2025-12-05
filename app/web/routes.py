@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.dependencies import get_user_email_from_session
 
 from app.models.account import AccountDB
 from app.models.user import UserDB
@@ -53,9 +54,7 @@ async def homepage(request: Request):
     Si l'utilisateur est connecté, affiche la page home.html avec ses comptes.
     Sinon, affiche la page de landing publique (index.html).
     """
-    user_email = None
-    if hasattr(request, "session"):
-        user_email = request.session.get("user_email")
+    user_email = get_user_email_from_session(request)
 
     # Si l'utilisateur est connecté, afficher la page home avec ses comptes
     if user_email:
@@ -175,9 +174,7 @@ async def login_page(request: Request):
     """
     Affiche le formulaire de connexion : saisie de l'adresse e-mail uniquement.
     """
-    user_email = None
-    if hasattr(request, "session"):
-        user_email = request.session.get("user_email")
+    user_email = get_user_email_from_session(request)
 
     return templates.TemplateResponse(
         "pages/login.html",
@@ -279,9 +276,7 @@ async def settings_page(request: Request):
     """
     Affiche la page des paramètres utilisateur.
     """
-    user_email = None
-    if hasattr(request, "session"):
-        user_email = request.session.get("user_email")
+    user_email = get_user_email_from_session(request)
 
     # Vérifier si l'utilisateur est connecté
     if not user_email:

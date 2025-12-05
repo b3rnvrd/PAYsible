@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 
 from app.core.database import get_db
+from app.core.dependencies import get_current_user_from_session
 from app.models.user import UserDB
 
 router = APIRouter(
@@ -31,18 +32,14 @@ class UserUpdate(BaseModel):
 
 
 @router.get("/me/", response_model=UserResponse)
-async def get_current_user(db: Session = Depends(get_db)):
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
     """
     Récupère les informations de l'utilisateur connecté (Profil).
     
     Endpoint: GET /api/users/me/
     """
-    # Pour la démo, on prend le premier utilisateur
-    # Dans une vraie app, on utiliserait l'ID de session ou un token JWT
-    user = db.query(UserDB).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
     
     # Mapper les champs de la DB vers le schéma de réponse
     return UserResponse(
@@ -56,18 +53,15 @@ async def get_current_user(db: Session = Depends(get_db)):
 
 
 @router.patch("/me/", response_model=UserResponse)
-async def update_current_user(user_update: UserUpdate, db: Session = Depends(get_db)):
+async def update_current_user(user_update: UserUpdate, request: Request, db: Session = Depends(get_db)):
     """
     Modifie les informations de l'utilisateur connecté.
     
     Endpoint: PATCH /api/users/me/
     Payload: { "address": "...", "phone": "...", "first_name": "...", "last_name": "..." }
     """
-    # Pour la démo, on prend le premier utilisateur
-    user = db.query(UserDB).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    # Récupérer l'utilisateur depuis la session
+    user = get_current_user_from_session(request, db)
     
     # Mettre à jour uniquement les champs fournis
     if user_update.first_name is not None:
