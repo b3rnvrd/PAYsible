@@ -173,7 +173,7 @@ PAYsible/
 
 Une documentation interactive (Swagger UI) est générée automatiquement par FastAPI.
 
-  * **Swagger UI :** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/documentation)
+  * **Swagger UI :** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ### Principaux Endpoints
 
