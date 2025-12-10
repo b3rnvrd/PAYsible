@@ -145,6 +145,16 @@ vous pourrez vous connecter à l'application avec les comptes de démonstration 
 uvicorn app.main:app --reload
 ```
 
+### 5-bis\ Déployer et lancer le projet via Docker
+Aller dans le répertoire racine du projet puis construire l'image via docker
+```bash
+docker build -t paysible_app .
+```
+Lancer le conteneur
+```bash
+docker run -p 8000:8000 paysible_app
+```
+
 ### 6\. Accéder à l'application
 
   * **URL :** [http://127.0.0.1:8000](http://127.0.0.1:8000)
