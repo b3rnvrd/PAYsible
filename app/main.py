@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse  # <--- Ajout de JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -37,25 +37,38 @@ templates = Jinja2Templates(directory="templates")
 # GESTION DES ERREURS PERSONNALISÉES
 # ==========================================
 
-# Gestion de l'erreur 404 (Page non trouvée)
+# Gestion des erreurs HTTP (404, 400, 401, etc.)
 @app.exception_handler(StarletteHTTPException)
-async def custom_404_handler(request: Request, exc: StarletteHTTPException):
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    
+    # 1. SI C'EST UNE REQUÊTE API -> On renvoie du JSON
+    if request.url.path.startswith("/api"):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+
+    # 2. SINON (Site Web) -> On renvoie les pages HTML
     if exc.status_code == 404:
         return templates.TemplateResponse(
             "404.html", 
             {"request": request}, 
             status_code=404
         )
-    # Pour toute autre erreur HTTP
+    
+    # Pour toute autre erreur HTTP sur le site (ex: 400, 401...)
+    # On peut soit afficher la 500, soit une page générique
     return templates.TemplateResponse(
         "500.html", 
         {"request": request}, 
         status_code=exc.status_code
     )
 
-# Gestion de l'erreur 500 (Erreur Serveur)
+# Gestion de l'erreur 500 (Erreur Serveur Interne / Crash code)
 @app.exception_handler(500)
 async def custom_500_handler(request: Request, exc):
+    # Les erreurs 500 de l'API doivent aussi être en JSON si possible,
+    # mais pour simplifier ici on garde le template global pour les crashs sévères.
     return templates.TemplateResponse(
         "500.html", 
         {"request": request}, 

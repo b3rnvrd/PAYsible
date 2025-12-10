@@ -55,8 +55,23 @@ def create_beneficiary(
     """Crée un bénéficiaire rattaché au premier compte de l'utilisateur."""
     user = get_current_user_from_session(request, db)
     
-    # On cherche un compte auquel rattacher ce bénéficiaire
-    # (Simplification : on prend le premier compte trouvé)
+    # 1. Vérification des doublons
+    # On regarde si cet utilisateur a déjà un bénéficiaire avec cet IBAN (sur n'importe lequel de ses comptes)
+    existing_beneficiary = (
+        db.query(BeneficiaryDB)
+        .join(AccountDB)
+        .filter(AccountDB.user_id == user.id)
+        .filter(BeneficiaryDB.iban == beneficiary.iban)
+        .first()
+    )
+
+    if existing_beneficiary:
+        raise HTTPException(
+            status_code=400,
+            detail="Un bénéficiaire avec cet IBAN existe déjà dans votre liste."
+        )
+
+    # 2. On cherche un compte auquel rattacher ce bénéficiaire
     account = db.query(AccountDB).filter(AccountDB.user_id == user.id).first()
     
     if not account:
@@ -65,7 +80,7 @@ def create_beneficiary(
             detail="Vous devez avoir au moins un compte bancaire pour ajouter des bénéficiaires."
         )
 
-    # Création
+    # 3. Création
     db_beneficiary = BeneficiaryDB(
         name=beneficiary.name,
         iban=beneficiary.iban,
@@ -94,7 +109,7 @@ def update_beneficiary(
         db.query(BeneficiaryDB)
         .join(AccountDB)
         .filter(BeneficiaryDB.id == id)
-        .filter(AccountDB.user_id == user.id)  # Sécurité critique
+        .filter(AccountDB.user_id == user.id)
         .first()
     )
     

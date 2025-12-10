@@ -1,9 +1,7 @@
 from app.core.database import SessionLocal, engine, Base
 from app.models.user import UserDB
 from app.models.account import AccountDB
-# IMPORTANT : On importe bien les deux classes Transaction depuis le bon fichier
 from app.models.transaction import TransactionDB, TransactionEntryDB
-# IMPORTANT : On importe BeneficiaryDB pour que la relation dans AccountDB ne plante pas
 from app.models.beneficiary import BeneficiaryDB
 
 from datetime import datetime, timedelta
@@ -53,13 +51,31 @@ for u in created_users: db.refresh(u)
 print(f"✅ 3 Utilisateurs créés (Testez avec {created_users[0].email})")
 
 # --- 3. CRÉATION DES COMPTES ---
-# On va donner des comptes variés à Elon (notre user principal)
-acc_courant = AccountDB(type="Courant", iban="FR76 1000 0000 0001", user_id=created_users[0].id)
-acc_epargne = AccountDB(type="Epargne", iban="FR76 2000 0000 0002", user_id=created_users[0].id)
-acc_pro = AccountDB(type="Professionnel", iban="FR76 3000 0000 0003", user_id=created_users[0].id)
+# NOTE: IBAN Français = 'FR' + 25 chiffres = 27 caractères au total
+# On utilise ici des IBANs fictifs mais valides en longueur pour passer le validateur.
 
-# Un compte pour les autres
-acc_jeff = AccountDB(type="Courant", iban="FR76 9999 9999 9999", user_id=created_users[1].id)
+acc_courant = AccountDB(
+    type="Courant", 
+    iban="FR7630003000300030003000301", # 27 chars
+    user_id=created_users[0].id
+)
+acc_epargne = AccountDB(
+    type="Epargne", 
+    iban="FR7630003000300030003000302", # 27 chars
+    user_id=created_users[0].id
+)
+acc_pro = AccountDB(
+    type="Professionnel", 
+    iban="FR7630003000300030003000303", # 27 chars
+    user_id=created_users[0].id
+)
+
+# Un compte pour Jeff
+acc_jeff = AccountDB(
+    type="Courant", 
+    iban="FR7699999999999999999999999", # 27 chars
+    user_id=created_users[1].id
+)
 
 db.add_all([acc_courant, acc_epargne, acc_pro, acc_jeff])
 db.commit()
@@ -136,10 +152,11 @@ for i in range(6):
 print("✅ 50+ Transactions générées")
 
 # --- 5. AJOUT DE BÉNÉFICIAIRES ---
+# Ces IBANs doivent aussi respecter le format FR + 25 chiffres
 benefs = [
-    BeneficiaryDB(name="Maman Maye", iban="FR76 0001 0001", account_id=acc_courant.id),
-    BeneficiaryDB(name="Propriétaire", iban="FR76 0002 0002", account_id=acc_courant.id),
-    BeneficiaryDB(name="Frère Kimbal", iban="FR76 0003 0003", account_id=acc_courant.id),
+    BeneficiaryDB(name="Maman Maye", iban="FR7600010001000100010001001", account_id=acc_courant.id),
+    BeneficiaryDB(name="Propriétaire", iban="FR7600020002000200020002002", account_id=acc_courant.id),
+    BeneficiaryDB(name="Frère Kimbal", iban="FR7600030003000300030003003", account_id=acc_courant.id),
 ]
 db.add_all(benefs)
 db.commit()

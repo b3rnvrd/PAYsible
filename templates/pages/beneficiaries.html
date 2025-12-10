@@ -3,13 +3,19 @@
 {% block title %}Bénéficiaires - PAYsible{% endblock %}
 
 {% block content %}
-<div class="container py-5 fade-in"> <h2 class="section-title"> <i class="bi bi-people-fill"></i> Gestion des Bénéficiaires
+<div class="container py-5 fade-in"> 
+    
+    <h2 class="section-title mb-4"> 
+        <i class="bi bi-people-fill"></i> Gestion des Bénéficiaires
     </h2>
+
+    <div id="alert-container"></div>
 
     <div class="row">
         <div class="col-md-4">
             
-            <div class="card mb-4"> <div class="card-header bg-primary-paysible text-white">
+            <div class="card mb-4"> 
+                <div class="card-header bg-primary-paysible text-white">
                     <i class="bi bi-person-plus-fill"></i> Ajouter un bénéficiaire
                 </div>
                 <div class="card-body">
@@ -82,36 +88,60 @@
 <script>
     const API_URL = "/api/beneficiaries/";
 
+    // --- Fonction utilitaire pour afficher les erreurs sur le site ---
+    function showError(message, type="danger") {
+        const container = document.getElementById('alert-container');
+        container.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        // Scroll vers le message pour être sûr qu'il est vu
+        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     // --- GET ---
     async function loadBeneficiaries() {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        const listElement = document.getElementById('beneficiaryList');
-        listElement.innerHTML = "";
+        try {
+            const response = await fetch(API_URL);
+            if (!response.ok) return;
+            const data = await response.json();
+            const listElement = document.getElementById('beneficiaryList');
+            listElement.innerHTML = "";
 
-        data.forEach(b => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-bold text-dark">${b.name}</td>
-                <td class="font-monospace text-muted small">${b.iban}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="prefillUpdate(${b.id}, '${b.name}', '${b.iban}')">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBeneficiary(${b.id})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
-            listElement.appendChild(tr);
-        });
+            data.forEach(b => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="fw-bold text-dark">${b.name}</td>
+                    <td class="font-monospace text-muted small">${b.iban}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="prefillUpdate(${b.id}, '${b.name}', '${b.iban}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteBeneficiary(${b.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                listElement.appendChild(tr);
+            });
+        } catch (e) {
+            console.error("Erreur chargement", e);
+        }
     }
 
     // --- POST ---
     async function addBeneficiary() {
+        // Nettoyer les anciennes erreurs
+        document.getElementById('alert-container').innerHTML = "";
+
         const name = document.getElementById('newName').value;
         const iban = document.getElementById('newIban').value;
-        if(!name || !iban) return alert("Veuillez remplir les champs");
+        
+        if(!name || !iban) {
+            return showError("Veuillez remplir tous les champs (Nom et IBAN).", "warning");
+        }
 
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -123,24 +153,52 @@
             document.getElementById('newName').value = "";
             document.getElementById('newIban').value = "";
             loadBeneficiaries();
+            showError("Bénéficiaire ajouté avec succès !", "success");
+        } else {
+            const errorData = await response.json();
+            let msg = "Impossible d'ajouter le bénéficiaire.";
+
+            if (response.status === 422 && errorData.detail) {
+                // Erreur de validation (Format IBAN)
+                msg = errorData.detail[0].msg.replace('Value error, ', '');
+            } else if (errorData.detail) {
+                // Erreur métier (Doublon)
+                msg = errorData.detail;
+            }
+            showError(msg);
         }
     }
 
     // --- PATCH ---
     async function updateBeneficiary() {
+        document.getElementById('alert-container').innerHTML = "";
+        
         const id = document.getElementById('updateId').value;
-        if(!id) return alert("Sélectionnez un bénéficiaire dans la liste d'abord");
+        if(!id) return showError("Sélectionnez un bénéficiaire dans la liste d'abord", "warning");
         
         const name = document.getElementById('updateName').value;
         const iban = document.getElementById('updateIban').value;
 
-        await fetch(API_URL + id + "/", {
+        const response = await fetch(API_URL + id + "/", {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, iban })
         });
         
-        loadBeneficiaries();
+        if (response.ok) {
+            loadBeneficiaries();
+            document.getElementById('updateId').value = "";
+            document.getElementById('updateName').value = "";
+            document.getElementById('updateIban').value = "";
+            showError("Modification enregistrée.", "success");
+        } else {
+            const errorData = await response.json();
+            let msg = errorData.detail;
+            if (response.status === 422 && errorData.detail[0]) {
+                msg = errorData.detail[0].msg.replace('Value error, ', '');
+            }
+            showError(msg);
+        }
     }
 
     // --- DELETE ---
@@ -154,11 +212,11 @@
         document.getElementById('updateId').value = id;
         document.getElementById('updateName').value = name;
         document.getElementById('updateIban').value = iban;
-        // Petit effet visuel pour montrer qu'on a sélectionné (scroll vers le haut si sur mobile)
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        // On nettoie les alertes précédentes pour ne pas embrouiller l'utilisateur
+        document.getElementById('alert-container').innerHTML = "";
     }
 
-    // Chargement initial
     document.addEventListener("DOMContentLoaded", loadBeneficiaries);
 </script>
 {% endblock %}
