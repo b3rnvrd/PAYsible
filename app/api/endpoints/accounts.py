@@ -42,10 +42,11 @@ class AccountBalanceResponse(BaseModel):
 
 
 def generate_iban():
-    """Génère un faux IBAN français pour la démo."""
+    """Génère un faux IBAN français pour la démo (SANS ESPACES)."""
+    # On génère 23 chiffres
     numbers = ''.join(random.choices(string.digits, k=23))
-    iban = f"FR76 {numbers[:4]} {numbers[4:8]} {numbers[8:12]} {numbers[12:16]} {numbers[16:20]} {numbers[20:23]}"
-    return iban
+    # On retourne le format compact pour la base de données
+    return f"FR76{numbers}" 
 
 
 @router.get("/", response_model=List[AccountResponse])
@@ -64,10 +65,14 @@ async def get_accounts(request: Request, db: Session = Depends(get_db)):
     # Créer la réponse avec les champs nécessaires
     result = []
     for acc in accounts:
+        # --- CORRECTION ICI ---
+        # On convertit le type DB ("Courant") vers le type API ("CHECKING")
+        api_type = "CHECKING" if acc.type == "Courant" else "SAVINGS"
+        
         result.append(AccountResponse(
             id=acc.id,
             label=f"Compte {acc.type}",  # Label générique basé sur le type
-            type=acc.type,
+            type=api_type,               # On utilise le type converti
             iban=acc.iban,
             created_at=datetime.now().isoformat(),  # Pas de champ created_at dans la DB
             is_active=True
@@ -94,7 +99,7 @@ async def create_account(account: AccountCreate, request: Request, db: Session =
             detail="Type de compte invalide. Utilisez CHECKING, SAVINGS, Courant ou Epargne."
         )
     
-    # Normaliser le type
+    # Normaliser le type pour la BDD
     account_type = account.type
     if account.type == "CHECKING":
         account_type = "Courant"
@@ -104,15 +109,15 @@ async def create_account(account: AccountCreate, request: Request, db: Session =
     # Créer le nouveau compte pour l'utilisateur connecté
     new_account = AccountDB(
         type=account_type,
-        iban=generate_iban(),
-        user_id=user.id  # Utiliser l'ID de l'utilisateur connecté
+        iban=generate_iban(), # Utilise la version sans espaces
+        user_id=user.id
     )
     
     db.add(new_account)
     db.commit()
     db.refresh(new_account)
     
-    # Convertir le type de la DB vers le format API
+    # Convertir le type de la DB vers le format API pour la réponse
     api_type = "CHECKING" if account_type == "Courant" else "SAVINGS"
     
     return AccountResponse(
@@ -175,15 +180,11 @@ async def update_account(account_id: int, account_update: AccountUpdate, request
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
     
-    # Note: La table accounts n'a pas de champ 'label' dans paysible.db
-    # On ne peut que retourner le compte avec le nouveau label en mémoire
-    # Pour une vraie implementation, il faudrait ajouter une colonne 'label' à la table
-    
     api_type = "CHECKING" if account.type == "Courant" else "SAVINGS"
     
     return AccountResponse(
         id=account.id,
-        label=account_update.label,  # Le label n'est pas sauvegardé en DB
+        label=account_update.label,  # Le label n'est pas sauvegardé en DB dans cette version
         type=api_type,
         iban=account.iban,
         created_at=datetime.now().isoformat(),
@@ -209,7 +210,7 @@ async def delete_account(account_id: int, request: Request, db: Session = Depend
     if not account:
         raise HTTPException(status_code=404, detail="Compte non trouvé.")
     
-    # Suppression du compte (pas de soft delete dans la table actuelle)
+    # Suppression du compte
     label = f"Compte {account.type}"
     db.delete(account)
     db.commit()

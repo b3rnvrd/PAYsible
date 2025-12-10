@@ -144,8 +144,9 @@ async def virement_beneficiaire(
 ):
     """
     Effectue un virement vers un bénéficiaire enregistré.
+    Gère intelligemment les virements internes entre utilisateurs.
     """
-    # Vérifier que le compte appartient bien à l'utilisateur
+    # 1. Vérifier que le compte à débiter appartient bien à l'utilisateur
     compte_debit = db.query(AccountDB).filter(
         AccountDB.id == data.compte_debit,
         AccountDB.user_id == current_user.id
@@ -157,19 +158,20 @@ async def virement_beneficiaire(
             detail="Compte à débiter introuvable ou non autorisé"
         )
     
-    # Vérifier que le bénéficiaire appartient à l'utilisateur
-    beneficiaire = db.query(BeneficiaryDB).filter(
+    # 2. Vérifier que le bénéficiaire existe et est lié à un compte de l'utilisateur
+    # On fait une jointure pour s'assurer que le bénéficiaire appartient bien à l'utilisateur courant
+    beneficiaire = db.query(BeneficiaryDB).join(AccountDB).filter(
         BeneficiaryDB.id == data.beneficiaire_id,
-        BeneficiaryDB.user_id == current_user.id
+        AccountDB.user_id == current_user.id
     ).first()
     
     if not beneficiaire:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Bénéficiaire introuvable"
+            detail="Bénéficiaire introuvable ou n'appartient pas à vos comptes"
         )
     
-    # Vérifier le solde
+    # 3. Vérifier le solde
     solde_debit = get_account_balance(db, data.compte_debit)
     if solde_debit < data.montant:
         raise HTTPException(
@@ -177,10 +179,10 @@ async def virement_beneficiaire(
             detail=f"Solde insuffisant. Disponible: {solde_debit:.2f} €"
         )
     
-    # Créer la transaction
+    # 4. Créer la transaction globale
     transaction_desc = data.description if data.description else f"Virement vers {beneficiaire.name}"
     new_transaction = TransactionDB(
-        type="Virement externe",
+        type="Virement", # Type générique
         amount=data.montant,
         date=datetime.now(),
         description=transaction_desc
@@ -188,19 +190,36 @@ async def virement_beneficiaire(
     db.add(new_transaction)
     db.flush()
     
-    # Créer l'entrée comptable (débit uniquement car c'est externe)
+    # 5. Créer l'entrée comptable DEBIT (L'argent part)
     db.add(TransactionEntryDB(
         amount=-data.montant,
         type="DEBIT",
-        description=f"{transaction_desc} - {beneficiaire.iban}",
+        description=f"Pour : {beneficiaire.name}",
         account_id=data.compte_debit,
         transaction_id=new_transaction.id
     ))
+
+    # --- 6. INTELLIGENCE COMPTABLE : CRÉDIT ---
+    # On vérifie si l'IBAN du bénéficiaire correspond à un compte LOCAL dans notre banque
+    compte_destinataire = db.query(AccountDB).filter(AccountDB.iban == beneficiaire.iban).first()
+
+    if compte_destinataire:
+        # C'est un virement interne déguisé ! On CRÉDITE le compte du destinataire.
+        db.add(TransactionEntryDB(
+            amount=data.montant,
+            type="CREDIT",
+            description=f"Reçu de : {current_user.name} {current_user.last_name}",
+            account_id=compte_destinataire.id,
+            transaction_id=new_transaction.id
+        ))
+    else:
+        # C'est un vrai virement externe (hors banque), l'argent sort simplement du système.
+        pass
     
     db.commit()
     db.refresh(new_transaction)
     
-    # Calculer le nouveau solde
+    # Calculer le nouveau solde pour le retour API
     nouveau_solde = get_account_balance(db, data.compte_debit)
     
     return VirementResponse(
