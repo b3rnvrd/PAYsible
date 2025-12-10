@@ -45,7 +45,27 @@ Installez toutes les bibliothèques nécessaires listées dans requirements.txt 
 pip install -r requirements.txt
 ```
 
-4. Lancement du serveur de développement
+4. Initialisation de la Base de Données (Seed)
+
+Pour tester l'application avec des données réalistes (utilisateurs, comptes, historique de transactions), vous devez exécuter le script de "seed".
+
+> **⚠️ Attention** : Ce script réinitialise complètement la base de données locale (suppression et recréation des tables).
+
+Assurez-vous que votre environnement virtuel est activé, puis lancez :
+
+```bash
+python seed.py
+```
+
+Vous pourrez vous connecter à l'application avec les comptes suivants :
+
+| Utilisateur | Email de connexion | Description |
+| :--- | :--- | :--- |
+| **Elon Musk** | `client@paysible.com` | **Compte Principal** (Nombreuses transactions & comptes) |
+| **Jeff Bezos** | `jeff@amazon.com` | Utilisateur secondaire |
+| **Bernard Arnault** | `bernard@lvmh.com` | Utilisateur secondaire |
+
+5. Lancement du serveur de développement
 
 Lancez l'application en utilisant Uvicorn avec le mode rechargement (--reload) pour que les changements de code soient pris en compte automatiquement.
 
