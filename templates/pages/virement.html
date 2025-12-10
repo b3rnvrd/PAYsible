@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Nouveau Virement - PAYsible{% endblock %}
+{% block title %}{{ _('transfer_page_title') }} - PAYsible{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -8,9 +8,9 @@
         <div class="col-lg-8">
             <div class="text-center mb-4">
                 <h1 class="section-title">
-                    <i class="bi bi-arrow-left-right"></i> Nouveau Virement
+                    <i class="bi bi-arrow-left-right"></i> {{ _('transfer_page_title') }}
                 </h1>
-                <p class="text-muted">Effectuez un virement entre vos comptes ou vers un bénéficiaire</p>
+                <p class="text-muted">{{ _('transfer_page_desc') }}</p>
             </div>
 
             <div class="row g-3 mb-4">
@@ -20,8 +20,8 @@
                             <div class="mb-3">
                                 <i class="bi bi-bank2 text-primary-paysible" style="font-size: 3rem;"></i>
                             </div>
-                            <h5 class="card-title fw-bold">Virement Interne</h5>
-                            <p class="card-text text-muted">Entre vos comptes PAYsible</p>
+                            <h5 class="card-title fw-bold">{{ _('transfer_internal') }}</h5>
+                            <p class="card-text text-muted">{{ _('transfer_internal_desc') }}</p>
                         </div>
                     </div>
                 </div>
@@ -31,8 +31,8 @@
                             <div class="mb-3">
                                 <i class="bi bi-people text-secondary-paysible" style="font-size: 3rem;"></i>
                             </div>
-                            <h5 class="card-title fw-bold">Vers un Bénéficiaire</h5>
-                            <p class="card-text text-muted">Vers un contact enregistré</p>
+                            <h5 class="card-title fw-bold">{{ _('transfer_benef') }}</h5>
+                            <p class="card-text text-muted">{{ _('transfer_benef_desc') }}</p>
                         </div>
                     </div>
                 </div>
@@ -41,7 +41,7 @@
             <div id="form-interne" class="card border-0 shadow-sm" style="display: none;">
                 <div class="card-header bg-gradient-paysible text-white py-3">
                     <h5 class="mb-0">
-                        <i class="bi bi-bank2"></i> Virement Interne
+                        <i class="bi bi-bank2"></i> {{ _('transfer_internal') }}
                     </h5>
                 </div>
                 <div class="card-body p-4">
@@ -60,10 +60,10 @@
                     <form id="form-virement-interne">
                         <div class="mb-3">
                             <label for="compte_debit" class="form-label fw-bold">
-                                <i class="bi bi-wallet"></i> Compte à débiter
+                                <i class="bi bi-wallet"></i> {{ _('lbl_debit_acc') }}
                             </label>
                             <select class="form-select" id="compte_debit" name="compte_debit" required>
-                                <option value="">Sélectionnez un compte</option>
+                                <option value="">{{ _('select_account') }}</option>
                                 {% for account in accounts %}
                                 <option value="{{ account.id }}">
                                     {{ account.type }} ({{ account.iban }}) - Solde: {{ account.balance }} €
@@ -74,10 +74,10 @@
 
                         <div class="mb-3">
                             <label for="compte_credit" class="form-label fw-bold">
-                                <i class="bi bi-wallet2"></i> Compte à créditer
+                                <i class="bi bi-wallet2"></i> {{ _('lbl_credit_acc') }}
                             </label>
                             <select class="form-select" id="compte_credit" name="compte_credit" required>
-                                <option value="">Sélectionnez un compte</option>
+                                <option value="">{{ _('select_account') }}</option>
                                 {% for account in accounts %}
                                 <option value="{{ account.id }}">
                                     {{ account.type }} ({{ account.iban }}) - Solde: {{ account.balance }} €
@@ -88,7 +88,7 @@
 
                         <div class="mb-3">
                             <label for="montant" class="form-label fw-bold">
-                                <i class="bi bi-cash-stack"></i> Montant (€)
+                                <i class="bi bi-cash-stack"></i> {{ _('lbl_amount') }}
                             </label>
                             <input 
                                 type="number" 
@@ -104,23 +104,23 @@
 
                         <div class="mb-4">
                             <label for="description" class="form-label fw-bold">
-                                <i class="bi bi-chat-left-text"></i> Description (optionnel)
+                                <i class="bi bi-chat-left-text"></i> {{ _('lbl_description') }}
                             </label>
                             <textarea 
                                 class="form-control" 
                                 id="description" 
                                 name="description" 
                                 rows="3"
-                                placeholder="Ex: Épargne mensuelle, remboursement..."
+                                placeholder="{{ _('placeholder_desc_internal') }}"
                             ></textarea>
                         </div>
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary-paysible btn-lg">
-                                <i class="bi bi-check-circle"></i> Effectuer le virement
+                                <i class="bi bi-check-circle"></i> {{ _('btn_perform_transfer') }}
                             </button>
                             <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
-                                <i class="bi bi-arrow-left"></i> Retour au choix
+                                <i class="bi bi-arrow-left"></i> {{ _('btn_back_choice') }}
                             </button>
                         </div>
                     </form>
@@ -130,7 +130,7 @@
             <div id="form-beneficiaire" class="card border-0 shadow-sm" style="display: none;">
                 <div class="card-header bg-gradient-paysible text-white py-3">
                     <h5 class="mb-0">
-                        <i class="bi bi-people"></i> Virement vers Bénéficiaire
+                        <i class="bi bi-people"></i> {{ _('transfer_benef') }}
                     </h5>
                 </div>
                 <div class="card-body p-4">
@@ -149,10 +149,10 @@
                     <form id="form-virement-beneficiaire">
                         <div class="mb-3">
                             <label for="compte_debit_benef" class="form-label fw-bold">
-                                <i class="bi bi-wallet"></i> Compte à débiter
+                                <i class="bi bi-wallet"></i> {{ _('lbl_debit_acc') }}
                             </label>
                             <select class="form-select" id="compte_debit_benef" name="compte_debit" required>
-                                <option value="">Sélectionnez un compte</option>
+                                <option value="">{{ _('select_account') }}</option>
                                 {% for account in accounts %}
                                 <option value="{{ account.id }}">
                                     {{ account.type }} ({{ account.iban }}) - Solde: {{ account.balance }} €
@@ -163,11 +163,11 @@
 
                         <div class="mb-3">
                             <label for="beneficiaire_id" class="form-label fw-bold">
-                                <i class="bi bi-person-check"></i> Bénéficiaire
+                                <i class="bi bi-person-check"></i> {{ _('lbl_beneficiary') }}
                             </label>
                             {% if beneficiaries and beneficiaries|length > 0 %}
                                 <select class="form-select" id="beneficiaire_id" name="beneficiaire_id" required>
-                                    <option value="">Sélectionnez un bénéficiaire</option>
+                                    <option value="">{{ _('select_beneficiary') }}</option>
                                     {% for benef in beneficiaries %}
                                     <option value="{{ benef.id }}">
                                         {{ benef.name }} - {{ benef.iban }}
@@ -176,15 +176,15 @@
                                 </select>
                             {% else %}
                                 <div class="alert alert-info mt-2">
-                                    <i class="bi bi-info-circle"></i> Vous n'avez pas encore de bénéficiaires enregistrés.
-                                    <a href="/beneficiaries" class="alert-link">Ajouter un bénéficiaire</a>
+                                    <i class="bi bi-info-circle"></i> {{ _('no_benefs_alert') }}
+                                    <a href="/beneficiaries" class="alert-link">{{ _('link_add_benef') }}</a>
                                 </div>
                             {% endif %}
                         </div>
 
                         <div class="mb-3">
                             <label for="montant_benef" class="form-label fw-bold">
-                                <i class="bi bi-cash-stack"></i> Montant (€)
+                                <i class="bi bi-cash-stack"></i> {{ _('lbl_amount') }}
                             </label>
                             <input 
                                 type="number" 
@@ -200,25 +200,25 @@
 
                         <div class="mb-4">
                             <label for="description_benef" class="form-label fw-bold">
-                                <i class="bi bi-chat-left-text"></i> Description (optionnel)
+                                <i class="bi bi-chat-left-text"></i> {{ _('lbl_description') }}
                             </label>
                             <textarea 
                                 class="form-control" 
                                 id="description_benef" 
                                 name="description" 
                                 rows="3"
-                                placeholder="Ex: Facture, remboursement..."
+                                placeholder="{{ _('placeholder_desc_benef') }}"
                             ></textarea>
                         </div>
 
                         <div class="d-grid gap-2">
                             {% if beneficiaries and beneficiaries|length > 0 %}
                             <button type="submit" class="btn btn-primary-paysible btn-lg">
-                                <i class="bi bi-check-circle"></i> Effectuer le virement
+                                <i class="bi bi-check-circle"></i> {{ _('btn_perform_transfer') }}
                             </button>
                             {% endif %}
                             <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
-                                <i class="bi bi-arrow-left"></i> Retour au choix
+                                <i class="bi bi-arrow-left"></i> {{ _('btn_back_choice') }}
                             </button>
                         </div>
                     </form>
@@ -227,7 +227,7 @@
 
             <div class="text-center mt-4">
                 <a href="/" class="text-muted">
-                    <i class="bi bi-house"></i> Retour à l'accueil
+                    <i class="bi bi-house"></i> {{ _('back_home') }}
                 </a>
             </div>
         </div>

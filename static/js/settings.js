@@ -224,10 +224,14 @@ class AccountsManager {
         };
         
         if (!data.type) {
+            // Vous pouvez aussi traduire ce message si vous voulez
             alert('Veuillez sélectionner un type de compte.');
             return;
         }
         
+        // Récupération des traductions
+        const t = window.PageTranslations || {};
+
         try {
             const response = await fetch(API_CONFIG.ENDPOINTS.ACCOUNTS, {
                 method: 'POST',
@@ -241,9 +245,12 @@ class AccountsManager {
                 this.closeModal(this.addModal);
                 form.reset();
                 this.loadAccounts();
-                AlertManager.show(this.alertDiv, 'success', 'Compte créé avec succès !');
+                
+                // UTILISATION DU MESSAGE TRADUIT ICI
+                AlertManager.show(this.alertDiv, 'success', t.msg_created || 'Compte créé avec succès !');
+                
             } else {
-                alert('Erreur lors de la création du compte.');
+                alert(t.msg_err_create || 'Erreur lors de la création du compte.');
             }
         } catch (error) {
             alert('Erreur de connexion au serveur.');
@@ -251,8 +258,11 @@ class AccountsManager {
     }
 
     async deleteAccount(accountId, accountType) {
-        const typeLabel = accountType === 'CHECKING' ? 'Courant' : 'Épargne';
-        if (!confirm(`Êtes-vous sûr de vouloir clôturer ce compte ${typeLabel} ?`)) {
+        // TRADUCTION : Récupérer le message de confirmation
+        const t = window.PageTranslations || {}; 
+        const confirmMsg = t.confirm_delete || `Êtes-vous sûr de vouloir clôturer ce compte ?`;
+
+        if (!confirm(confirmMsg)) {
             return;
         }
         
@@ -263,7 +273,8 @@ class AccountsManager {
             
             if (response.ok) {
                 this.loadAccounts();
-                AlertManager.show(this.alertDiv, 'success', 'Compte clôturé avec succès !');
+                // TRADUCTION : Message succès
+                AlertManager.show(this.alertDiv, 'success', t.msg_closed || 'Compte clôturé avec succès !');
             } else {
                 alert('Erreur lors de la clôture du compte.');
             }
@@ -312,27 +323,41 @@ class AccountsManager {
     }
 
     getAccountCardHTML(account) {
-        const typeLabel = account.type === 'CHECKING' ? 'Courant' : 'Épargne';
+        // TRADUCTION : Récupération de l'objet injecté
+        const t = window.PageTranslations || {};
+
+        // Sélection des libellés selon le type (CHECKING ou SAVINGS)
+        // Fallback sur des valeurs par défaut si la traduction manque
+        const typeLabelFull = account.type === 'CHECKING' ? (t.type_CHECKING || 'Compte Courant') : (t.type_SAVINGS || 'Compte Épargne');
+        const typeBadge = account.type === 'CHECKING' ? (t.badge_CHECKING || 'Courant') : (t.badge_SAVINGS || 'Épargne');
+        
+        // Autres libellés
+        const lblBalance = t.lbl_balance || 'Solde actuel';
+        const btnClose = t.btn_close || 'Clôturer';
+        const lblCreated = t.lbl_created || 'Créé le';
+        const txtIban = account.iban || (t.msg_iban_pending || 'IBAN en cours...');
+
         const typeClass = account.type === 'CHECKING' ? 'bg-primary' : 'bg-success';
-        const createdDate = new Date(account.created_at || Date.now()).toLocaleDateString('fr-FR');
+        const createdDate = new Date(account.created_at || Date.now()).toLocaleDateString('fr-FR'); // Note: on pourrait aussi adapter la locale de la date
         
         return `
             <div class="col-md-6 mb-3">
                 <div class="card account-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="card-title mb-0">Compte ${typeLabel}</h6>
+                            <h6 class="card-title mb-0">${typeLabelFull}</h6>
+                            
                             <span class="account-badge ${typeClass} text-white">
-                                ${typeLabel}
+                                ${typeBadge}
                             </span>
                         </div>
                         
                         <div class="iban-display mb-3">
-                            ${account.iban || 'IBAN en cours de génération...'}
+                            ${txtIban}
                         </div>
                         
                         <div class="mb-3">
-                            <small class="text-muted">Solde actuel</small>
+                            <small class="text-muted">${lblBalance}</small>
                             <div class="balance-amount" id="balance-${account.id}">
                                 <span class="spinner-border spinner-border-sm" role="status"></span>
                             </div>
@@ -341,12 +366,12 @@ class AccountsManager {
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-danger" 
                                     onclick="accountsManager.deleteAccount(${account.id}, '${account.type}')">
-                                <i class="bi bi-trash"></i> Clôturer
+                                <i class="bi bi-trash"></i> ${btnClose}
                             </button>
                         </div>
                         
                         <small class="text-muted d-block mt-2">
-                            <i class="bi bi-calendar"></i> Créé le ${createdDate}
+                            <i class="bi bi-calendar"></i> ${lblCreated} ${createdDate}
                         </small>
                     </div>
                 </div>
@@ -408,16 +433,34 @@ class PreferencesManager {
     handleSubmit(e) {
         e.preventDefault();
         
+        const language = document.getElementById('language').value;
+        const currency = document.getElementById('currency').value;
+        const notif_transactions = document.getElementById('notif_transactions').checked;
+        const notif_email = document.getElementById('notif_email').checked;
+
         const preferences = {
-            notif_transactions: document.getElementById('notif_transactions').checked,
-            notif_email: document.getElementById('notif_email').checked,
-            currency: document.getElementById('currency').value,
-            language: document.getElementById('language').value
+            notif_transactions,
+            notif_email,
+            currency,
+            language
         };
         
+        // 1. Sauvegarde locale (pour garder l'état des cases à cocher JS)
         localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(preferences));
         
-        AlertManager.show(this.alertDiv, 'success', 'Préférences enregistrées avec succès !');
+        // 2. SAUVEGARDE COOKIE (Pour que le serveur Python sache quelle langue afficher)
+        // Le cookie expire dans 1 an (365 jours)
+        const d = new Date();
+        d.setTime(d.getTime() + (365*24*60*60*1000));
+        let expires = "expires="+ d.toUTCString();
+        document.cookie = "language=" + language + ";" + expires + ";path=/";
+
+        AlertManager.show(this.alertDiv, 'success', 'Préférences enregistrées ! Rechargement...');
+        
+        // 3. Recharger la page pour appliquer la langue
+        setTimeout(() => {
+            location.reload();
+        }, 1000);
     }
 }
 

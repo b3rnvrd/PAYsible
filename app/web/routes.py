@@ -7,7 +7,7 @@ from sqlalchemy import func, extract
 from datetime import datetime
 import json
 import re
-
+from app.core.i18n import get_translator
 from app.core.database import get_db
 from app.core.dependencies import get_user_email_from_session
 
@@ -31,6 +31,7 @@ def get_account_balance(db: Session, account_id: int) -> float:
 async def homepage(request: Request, db: Session = Depends(get_db)):
     """Page d'accueil avec données réelles."""
     user_email = get_user_email_from_session(request)
+    _ = get_translator(request) # Traducteur
 
     if user_email:
         user = db.query(UserDB).filter(UserDB.email == user_email).first()
@@ -114,11 +115,19 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
                 "accounts": accounts_data,
                 "transactions_by_account": transactions_by_account,
                 "stats": stats_display,
-                "current_date": datetime.now().strftime("%d/%m/%Y")
+                "current_date": datetime.now().strftime("%d/%m/%Y"),
+                "_": _ # Injection
             }
         )
 
-    return templates.TemplateResponse("index.html", {"request": request, "user_email": None})
+    return templates.TemplateResponse(
+        "index.html", 
+        {
+            "request": request,
+            "user_email": None,
+            "_": _ # Injection
+        }
+    )
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -127,6 +136,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     user_email = get_user_email_from_session(request)
     if not user_email:
         return RedirectResponse(url="/login")
+    
+    _ = get_translator(request) # Traducteur
 
     user = db.query(UserDB).filter(UserDB.email == user_email).first()
 
@@ -143,7 +154,6 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             .order_by(TransactionDB.date.desc()) \
             .limit(20).all()
 
-        # Reconstruction historique du solde
         dates = []
         history_values = []
         temp_balance = balance
@@ -169,7 +179,6 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "data": json.dumps(history_values)
         })
 
-    # KPI: Dépenses globales par Catégorie
     user_account_ids = [acc.id for acc in user.accounts]
     expenses = db.query(TransactionEntryDB.description, func.sum(TransactionEntryDB.amount)) \
         .filter(TransactionEntryDB.account_id.in_(user_account_ids), TransactionEntryDB.amount < 0) \
@@ -179,7 +188,6 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     pie_labels = [e[0] for e in expenses]
     pie_data = [abs(float(e[1])) for e in expenses]
 
-    # Créer une version JSON pour le JavaScript
     accounts_data_json = json.dumps([
         {
             "id": acc["id"],
@@ -201,19 +209,22 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "accounts_data": accounts_charts_data,
             "accounts_data_json": accounts_data_json,
             "chart_pie_labels": json.dumps(pie_labels),
-            "chart_pie_data": json.dumps(pie_data)
+            "chart_pie_data": json.dumps(pie_data),
+            "_": _ # Injection
         }
     )
 
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
+    _ = get_translator(request) # Traducteur
     return templates.TemplateResponse(
         "pages/login.html",
         {
             "request": request,
             "user_email": get_user_email_from_session(request),
             "form_email": "",
+            "_": _ # Injection
         },
     )
 
@@ -224,6 +235,7 @@ async def login_submit(
         email: str = Form(...),
         db: Session = Depends(get_db),
 ):
+    _ = get_translator(request) # Traducteur
     email = (email or "").strip().lower()
 
     if not email or len(email) > 255:
@@ -235,6 +247,7 @@ async def login_submit(
                 "user_email": get_user_email_from_session(request),
                 "form_email": "",
                 "error": "Veuillez saisir une adresse e-mail valide.",
+                "_": _ # Injection
             },
         )
 
@@ -249,6 +262,7 @@ async def login_submit(
                 "user_email": get_user_email_from_session(request),
                 "form_email": email,
                 "error": "Aucun compte trouvé avec cet e-mail.",
+                "_": _ # Injection
             },
         )
 
@@ -260,9 +274,15 @@ async def login_submit(
 
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
+    _ = get_translator(request) # Traducteur
     return templates.TemplateResponse(
         "pages/register.html",
-        {"request": request, "title": "Créer un compte - PAYsible", "error": None},
+        {
+            "request": request, 
+            "title": "Créer un compte - PAYsible", 
+            "error": None,
+            "_": _ # Injection
+        },
     )
 
 
@@ -276,10 +296,10 @@ async def register_submit(
         email: str = Form(...),
         db: Session = Depends(get_db),
 ):
+    _ = get_translator(request) # Traducteur
     email = (email or "").strip().lower()
     phone_number = (phone_number or "").strip()
 
-    # Validation du numéro au format international E.164
     if phone_number:
         pattern = r"^\+[1-9]\d{7,14}$"
         if not re.match(pattern, phone_number):
@@ -289,6 +309,7 @@ async def register_submit(
                     "request": request,
                     "title": "Créer un compte - PAYsible",
                     "error": "Le numéro de téléphone doit être au format international, ex : +33612345678.",
+                    "_": _ # Injection
                 },
             )
 
@@ -300,6 +321,7 @@ async def register_submit(
                 "request": request,
                 "title": "Créer un compte - PAYsible",
                 "error": "Veuillez saisir une adresse e-mail valide.",
+                "_": _ # Injection
             },
         )
 
@@ -311,6 +333,7 @@ async def register_submit(
                 "request": request,
                 "title": "Créer un compte - PAYsible",
                 "error": "Un compte existe déjà avec cet e-mail.",
+                "_": _ # Injection
             },
         )
 
@@ -334,6 +357,7 @@ async def register_submit(
             "user_email": user.email,
             "error": None,
             "info": "Compte créé avec succès.",
+            "_": _ # Injection
         },
     )
 
@@ -348,6 +372,8 @@ async def logout(request: Request):
 async def view_soldes(request: Request, db: Session = Depends(get_db)):
     user_email = get_user_email_from_session(request)
     if not user_email: return RedirectResponse(url="/login")
+    
+    _ = get_translator(request) # Traducteur
 
     user = db.query(UserDB).filter(UserDB.email == user_email).first()
     accounts_list = []
@@ -383,7 +409,8 @@ async def view_soldes(request: Request, db: Session = Depends(get_db)):
             "user_name": user.name if user else "",
             "accounts": accounts_list,
             "transactions": transactions_list,
-            "total_balance": total_balance
+            "total_balance": total_balance,
+            "_": _ # Injection
         }
     )
 
@@ -393,10 +420,16 @@ def view_beneficiaries(request: Request):
     user_email = request.session.get("user_email")
     if not user_email:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    _ = get_translator(request) # Traducteur
 
     return templates.TemplateResponse(
         "pages/beneficiaries.html",
-        {"request": request, "user_email": user_email}
+        {
+            "request": request, 
+            "user_email": user_email,
+            "_": _ # Injection
+        }
     )
 
 
@@ -409,12 +442,18 @@ async def settings_page(request: Request):
     if not user_email:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
+    _ = get_translator(request)
+
+    current_lang = request.cookies.get("language", "fr")
+
     return templates.TemplateResponse(
         "pages/settings.html",
         {
             "request": request,
             "title": "Paramètres - PAYsible",
             "user_email": user_email,
+            "_": _,
+            "current_lang": current_lang
         },
     )
 
@@ -425,6 +464,8 @@ async def virement_page(request: Request, db: Session = Depends(get_db)):
     user_email = get_user_email_from_session(request)
     if not user_email:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    _ = get_translator(request) # Traducteur
 
     user = db.query(UserDB).filter(UserDB.email == user_email).first()
     if not user:
@@ -440,7 +481,6 @@ async def virement_page(request: Request, db: Session = Depends(get_db)):
             "balance": f"{balance:,.2f}"
         })
 
-    # Récupérer tous les bénéficiaires de tous les comptes de l'utilisateur
     user_account_ids = [acc.id for acc in user.accounts]
     beneficiaries = db.query(BeneficiaryDB).filter(
         BeneficiaryDB.account_id.in_(user_account_ids)
@@ -463,7 +503,8 @@ async def virement_page(request: Request, db: Session = Depends(get_db)):
             "accounts": accounts_data,
             "beneficiaries": beneficiaries_data,
             "error": None,
-            "success": None
+            "success": None,
+            "_": _ # Injection
         }
     )
 
@@ -481,10 +522,11 @@ async def virement_interne_submit(
     user_email = get_user_email_from_session(request)
     if not user_email:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    _ = get_translator(request) # Traducteur
 
     user = db.query(UserDB).filter(UserDB.email == user_email).first()
     
-    # Récupération des données pour ré-afficher le formulaire en cas d'erreur
     accounts_data = []
     for acc in user.accounts:
         balance = get_account_balance(db, acc.id)
@@ -495,43 +537,41 @@ async def virement_interne_submit(
             "balance": f"{balance:,.2f}"
         })
 
-    # 1. ERREUR : Montant invalide (négatif ou nul)
     if montant <= 0:
         return templates.TemplateResponse(
             "pages/virement.html",
             {
                 "request": request, "user_email": user_email, "accounts": accounts_data,
                 "error": "⚠️ Le montant du virement doit être strictement positif.",
-                "success": None
+                "success": None,
+                "_": _ # Injection
             }
         )
 
-    # 2. ERREUR : Virement vers le même compte
     if compte_debit == compte_credit:
         return templates.TemplateResponse(
             "pages/virement.html",
             {
                 "request": request, "user_email": user_email, "accounts": accounts_data,
                 "error": "🚫 Vous ne pouvez pas effectuer un virement vers le même compte.",
-                "success": None
+                "success": None,
+                "_": _ # Injection
             }
         )
 
-    # Récupération des soldes
     solde_debit = get_account_balance(db, compte_debit)
 
-    # 3. ERREUR : Solde insuffisant
     if solde_debit < montant:
         return templates.TemplateResponse(
             "pages/virement.html",
             {
                 "request": request, "user_email": user_email, "accounts": accounts_data,
                 "error": f"💸 Solde insuffisant. Vous avez {solde_debit:,.2f} € disponibles, mais vous essayez de virer {montant:,.2f} €.",
-                "success": None
+                "success": None,
+                "_": _ # Injection
             }
         )
 
-    # --- Exécution du virement (Création Transaction + Entrées) ---
     transaction_desc = description if description else "Virement interne"
     new_transaction = TransactionDB(
         type="Virement interne",
@@ -542,12 +582,10 @@ async def virement_interne_submit(
     db.add(new_transaction)
     db.flush()
 
-    # Débit
     db.add(TransactionEntryDB(
         amount=-montant, type="DEBIT", description=transaction_desc,
         account_id=compte_debit, transaction_id=new_transaction.id
     ))
-    # Crédit
     db.add(TransactionEntryDB(
         amount=montant, type="CREDIT", description=transaction_desc,
         account_id=compte_credit, transaction_id=new_transaction.id
@@ -555,8 +593,6 @@ async def virement_interne_submit(
 
     db.commit()
 
-    # Mise à jour des données d'affichage après virement
-    # (On refait la boucle pour afficher les nouveaux soldes à jour)
     accounts_data_updated = []
     for acc in user.accounts:
         new_balance = get_account_balance(db, acc.id)
@@ -564,7 +600,6 @@ async def virement_interne_submit(
             "id": acc.id, "type": f"Compte {acc.type}", "iban": acc.iban, "balance": f"{new_balance:,.2f}"
         })
 
-    # 4. SUCCÈS : Message de confirmation
     return templates.TemplateResponse(
         "pages/virement.html",
         {
@@ -572,7 +607,8 @@ async def virement_interne_submit(
             "user_email": user_email,
             "accounts": accounts_data_updated,
             "error": None,
-            "success": f"✅ Virement interne de {montant:,.2f} € effectué avec succès !"
+            "success": f"✅ Virement interne de {montant:,.2f} € effectué avec succès !",
+            "_": _ # Injection
         }
     )
 
@@ -589,10 +625,11 @@ async def virement_beneficiaire_submit(
     """Traite un virement vers un bénéficiaire externe (ou interne via IBAN)."""
     user_email = get_user_email_from_session(request)
     if not user_email: return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    _ = get_translator(request) # Traducteur
 
     user = db.query(UserDB).filter(UserDB.email == user_email).first()
 
-    # --- Préparation des données pour le template (en cas d'erreur ou succès) ---
     accounts_data = []
     for acc in user.accounts:
         bal = get_account_balance(db, acc.id)
@@ -605,10 +642,10 @@ async def virement_beneficiaire_submit(
     context = {
         "request": request, "user_email": user_email,
         "accounts": accounts_data, "beneficiaries": beneficiaries_data,
-        "error": None, "success": None, "active_tab": "beneficiaire"
+        "error": None, "success": None, "active_tab": "beneficiaire",
+        "_": _ # Injection
     }
 
-    # 1. ERREURS
     if montant <= 0:
         context["error"] = "⚠️ Le montant doit être supérieur à 0 €."
         return templates.TemplateResponse("pages/virement.html", context)
@@ -625,37 +662,27 @@ async def virement_beneficiaire_submit(
 
     nom_benef = beneficiaire.name
 
-    # --- 2. EXÉCUTION DU VIREMENT ---
     label = description if description else f"Virement vers {nom_benef}"
     
-    # Création de la transaction globale
     new_txn = TransactionDB(type="Virement", amount=montant, date=datetime.now(), description=label)
     db.add(new_txn)
-    db.flush() # On récupère l'ID
+    db.flush()
 
-    # A. DÉBIT (L'argent sort du compte de l'émetteur)
     db.add(TransactionEntryDB(
         amount=-montant, type="DEBIT", description=f"Pour : {nom_benef}",
         account_id=compte_debit, transaction_id=new_txn.id
     ))
 
-    # B. CRÉDIT INTELLIGENT (Le fix est ici !)
-    # On regarde si l'IBAN du bénéficiaire correspond à un compte local dans notre banque
     compte_destinataire = db.query(AccountDB).filter(AccountDB.iban == beneficiaire.iban).first()
     
     if compte_destinataire:
-        # C'est un client PAYsible ! On le crédite.
         db.add(TransactionEntryDB(
             amount=montant, type="CREDIT", description=f"Reçu de : {user.name} {user.last_name}",
             account_id=compte_destinataire.id, transaction_id=new_txn.id
         ))
-    else:
-        # C'est un vrai virement externe, l'argent sort du système (pas d'écriture CRÉDIT locale)
-        pass
-
+    
     db.commit()
 
-    # --- 3. MISE A JOUR AFFICHAGE ---
     updated_accounts = []
     for acc in user.accounts:
         bal = get_account_balance(db, acc.id)

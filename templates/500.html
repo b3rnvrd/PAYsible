@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erreur 500 - PAYsible</title>
+    <title>{{ _('error_500_title') }} - PAYsible</title>
     <link rel="stylesheet" href="{{ request.url_for('static', path='css/500.css') }}">
 </head>
 <body class="error-page-body">
@@ -11,9 +11,9 @@
     <div class="container-error">
         <div class="error-text">
             <h1>500</h1>
-            <h2>ERREUR</h2>
-            <p>Oups ! Nos serveurs ont eu un petit bug. L'équipe technique est sur le coup.</p>
-            <a href="/" class="btn-home">Retour à l'accueil</a>
+            <h2>{{ _('error_generic_title') }}</h2>
+            <p>{{ _('error_500_text') }}</p>
+            <a href="/" class="btn-home">{{ _('btn_back_home_long') }}</a>
         </div>
         
         <div class="stack-container">

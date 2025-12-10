@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Connexion - PAYsible{% endblock %}
+{% block title %}{{ _('login_title') }} - PAYsible{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-4">
 
-            <h1 class="section-title mb-4 text-center">Connexion</h1>
+            <h1 class="section-title mb-4 text-center">{{ _('login_title') }}</h1>
             <p class="text-muted text-center mb-4">
-                Entre ton adresse e-mail pour accéder à ton espace PAYsible.
+                {{ _('login_desc') }}
             </p>
 
             {% if error %}
@@ -20,7 +20,7 @@
 
 <form method="post" action="/login">
     <div class="mb-3">
-        <label for="email" class="form-label">Adresse e-mail</label>
+        <label for="email" class="form-label">{{ _('lbl_email_addr') }}</label>
         <input
             type="email"
             class="form-control"
@@ -31,26 +31,26 @@
             value="{{ form_email or '' }}"
         >
         <div class="form-text">
-            Authentification simplifiée : aucune validation complexe n'est appliquée.
+            {{ _('auth_simplified') }}
         </div>
     </div>
 
     <button type="submit" class="btn btn-primary-paysible w-100">
-        Continuer
+        {{ _('btn_continue') }}
     </button>
 </form>
 
 <div class="text-center mt-3">
     <p class="text-muted mb-2">
-        Pas encore de compte ?
+        {{ _('no_account_yet') }}
     </p>
     <a href="/register" class="btn btn-outline-secondary w-100">
-        Ajouter un compte
+        {{ _('btn_add_account') }}
     </a>
 </div>
 
 <div class="text-center mt-3">
-    <a href="/">⬅ Retour à l'accueil</a>
+    <a href="/">⬅ {{ _('back_home') }}</a>
 </div>
 
 

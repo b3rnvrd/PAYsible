@@ -1,23 +1,23 @@
 {% extends 'base.html' %}
 
-{% block title %}Tableau de Bord - PAYsible{% endblock %}
+{% block title %}{{ _('nav_dashboard') }} - PAYsible{% endblock %}
 
 {% block content %}
 <div class="container py-5 fade-in">
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h2 class="section-title mb-0"><i class="bi bi-speedometer2"></i> Tableau de Bord</h2>
-            <p class="text-muted">Vue détaillée de vos actifs</p>
+            <h2 class="section-title mb-0"><i class="bi bi-speedometer2"></i> {{ _('dash_title') }}</h2>
+            <p class="text-muted">{{ _('dash_subtitle') }}</p>
         </div>
         <div class="text-end">
-            <h6 class="text-muted text-uppercase small mb-1">Patrimoine Total</h6>
+            <h6 class="text-muted text-uppercase small mb-1">{{ _('total_wealth') }}</h6>
             <h2 class="text-primary-paysible fw-bold mb-0">{{ total_balance }} €</h2>
         </div>
     </div>
 
     <div class="row">
         <div class="col-lg-8">
-            <h4 class="mb-4 text-primary-paysible"><i class="bi bi-graph-up"></i> Évolution par Compte</h4>
+            <h4 class="mb-4 text-primary-paysible"><i class="bi bi-graph-up"></i> {{ _('evolution_by_account') }}</h4>
             
             {% for account in accounts_data %}
             <div class="card shadow-sm border-0 mb-4" id="compte-{{ account.id }}">
@@ -35,17 +35,17 @@
             {% endfor %}
             
             {% if not accounts_data %}
-            <div class="alert alert-info">Aucune donnée de compte disponible.</div>
+            <div class="alert alert-info">{{ _('no_account_data') }}</div>
             {% endif %}
         </div>
 
         <div class="col-lg-4">
-            <h4 class="mb-4 text-primary-paysible"><i class="bi bi-pie-chart"></i> Répartition Globale</h4>
+            <h4 class="mb-4 text-primary-paysible"><i class="bi bi-pie-chart"></i> {{ _('global_distribution') }}</h4>
             
             <div class="card shadow-sm border-0 mb-4 sticky-top" style="top: 100px; z-index: 1;">
                 <div class="card-body">
-                    <h6 class="card-title text-center mb-4">Où va votre argent ?</h6>
-                             <div style="position: relative; height: 260px;">
+                    <h6 class="card-title text-center mb-4">{{ _('where_money_goes') }}</h6>
+                    <div style="position: relative; height: 260px;">
                         <canvas id="expensesChart"></canvas>
                     </div>
 
@@ -54,7 +54,7 @@
 
                     <div class="mt-4 text-center">
                         <a href="/soldes" class="btn btn-outline-primary btn-sm rounded-pill">
-                            Voir le détail des transactions
+                            {{ _('btn_view_tx_details') }}
                         </a>
                     </div>
                 </div>
@@ -63,7 +63,6 @@
     </div>
 </div>
 
-<!-- Données pour le JavaScript -->
 <div id="accounts-data" 
      data-accounts='{{ accounts_data_json | safe }}' 
      style="display: none;">

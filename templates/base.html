@@ -30,25 +30,24 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Accueil</a>
+                        <a class="nav-link" href="/">{{ _('nav_home') }}</a>
                     </li>        
-                        {% if user_email %}
+                    {% if user_email %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('dashboard') }}">Tableau de bord</a>
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">{{ _('nav_dashboard') }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('view_beneficiaries') }}">Bénéficiaires</a>                    
+                            <a class="nav-link" href="{{ url_for('view_beneficiaries') }}">{{ _('nav_beneficiaries') }}</a>                    
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/soldes">Soldes</a>
+                            <a class="nav-link" href="/soldes">{{ _('nav_balance') }}</a>
                         </li>
-
                         <li class="nav-item d-none d-lg-flex align-self-center mx-2">
                             <div class="vr text-white opacity-50" style="height: 20px;"></div>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="/logout">Déconnexion</a>
+                            <a class="nav-link" href="/logout">{{ _('nav_logout') }}</a>
                         </li>
 
                         <li class="nav-item d-none d-lg-flex align-self-center mx-2">
@@ -59,10 +58,9 @@
                             <a class="nav-link" href="/settings">
                                 <i class="bi bi-gear"></i>
                             </a>
-                        </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="/login">Connexion</a>
+                            <a class="nav-link" href="/login">{{ _('nav_login') }}</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -79,13 +77,11 @@
         <div class="container py-4">
             <div class="row">
                 <div class="col-md-6">
-                    <h5>
-                        <span class="text-white">Pay</span><span style="color: #38A5E4;">Sible</span>
-                    </h5>
-                    <p class="text-muted">Solution de gestion de paiements simplifiée</p>
+                    <h5><span class="text-white">Pay</span><span style="color: #38A5E4;">Sible</span></h5>
+                    <p class="text-muted">{{ _('footer_desc') }}</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="text-muted mb-0">&copy; 2025 PAYsible. Tous droits réservés.</p>
+                    <p class="text-muted mb-0">&copy; 2025 PAYsible. {{ _('footer_rights') }}</p>
                 </div>
             </div>
         </div>

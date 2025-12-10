@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Paramètres - PAYsible{% endblock %}
+{% block title %}{{ _('settings_title') }} - PAYsible{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ request.url_for('static', path='css/settings.css') }}">
@@ -9,34 +9,31 @@
 {% block content %}
 <div class="container py-5">
     <div class="row">
-        <!-- Navigation latérale -->
         <div class="col-md-3">
             <div class="settings-nav">
                 <h4 class="section-title mb-3">
-                    <i class="bi bi-gear-fill"></i> Paramètres
+                    <i class="bi bi-gear-fill"></i> {{ _('settings_title') }}
                 </h4>
                 <nav class="nav flex-column">
                     <a class="nav-link active" href="#" data-section="profile">
-                        <i class="bi bi-person-circle"></i> Mon Profil
+                        <i class="bi bi-person-circle"></i> {{ _('set_profile') }}
                     </a>
                     <a class="nav-link" href="#" data-section="accounts">
-                        <i class="bi bi-bank"></i> Mes Comptes
+                        <i class="bi bi-bank"></i> {{ _('set_accounts') }}
                     </a>
                     <a class="nav-link" href="#" data-section="app-settings">
-                        <i class="bi bi-sliders"></i> Préférences
+                        <i class="bi bi-sliders"></i> {{ _('set_prefs') }}
                     </a>
                 </nav>
             </div>
         </div>
 
-        <!-- Contenu principal -->
         <div class="col-md-9">
             
-            <!-- Section : Mon Profil -->
             <div id="profile" class="settings-section active">
                 <div class="card shadow-sm">
                     <div class="card-header bg-gradient-paysible text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-circle"></i> Mes Informations</h5>
+                        <h5 class="mb-0"><i class="bi bi-person-circle"></i> {{ _('set_my_info') }}</h5>
                     </div>
                     <div class="card-body">
                         <div id="profile-alert" class="alert d-none" role="alert"></div>
@@ -44,23 +41,23 @@
                         <form id="profile-form">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="first_name" class="form-label">Prénom</label>
+                                    <label for="first_name" class="form-label">{{ _('lbl_firstname') }}</label>
                                     <input type="text" class="form-control" id="first_name" name="first_name" placeholder="Votre prénom">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="last_name" class="form-label">Nom</label>
+                                    <label for="last_name" class="form-label">{{ _('lbl_lastname') }}</label>
                                     <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Votre nom">
                                 </div>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
+                                <label for="email" class="form-label">{{ _('lbl_email') }}</label>
                                 <input type="email" class="form-control" id="email" name="email" readonly>
                                 <small class="form-text text-muted">L'email ne peut pas être modifié</small>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="phone" class="form-label">Téléphone</label>
+                                <label for="phone" class="form-label">{{ _('lbl_phone') }}</label>
                                 <input
                                     type="tel"
                                     class="form-control"
@@ -75,33 +72,31 @@
                                 </small>
                             </div>       
                             <div class="mb-3">
-                                <label for="address" class="form-label">Adresse</label>
+                                <label for="address" class="form-label">{{ _('lbl_address') }}</label>
                                 <textarea class="form-control" id="address" name="address" rows="3" placeholder="Votre adresse complète"></textarea>
                             </div>
                             
                             <button type="submit" class="btn btn-primary-paysible">
-                                <i class="bi bi-save"></i> Enregistrer les modifications
+                                <i class="bi bi-save"></i> {{ _('btn_save') }}
                             </button>
                         </form>
                     </div>
                 </div>
             </div>
 
-            <!-- Section : Mes Comptes -->
             <div id="accounts" class="settings-section">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 class="section-title mb-0">
-                        <i class="bi bi-bank"></i> Gestion des Comptes
+                        <i class="bi bi-bank"></i> {{ _('title_manage_accounts') }}
                     </h4>
                     <button class="btn btn-primary-paysible" data-bs-toggle="modal" data-bs-target="#addAccountModal">
-                        <i class="bi bi-plus-circle"></i> Nouveau Compte
+                        <i class="bi bi-plus-circle"></i> {{ _('btn_new_account') }}
                     </button>
                 </div>
                 
                 <div id="accounts-alert" class="alert d-none" role="alert"></div>
                 
                 <div id="accounts-list" class="row">
-                    <!-- Les comptes seront chargés dynamiquement ici -->
                     <div class="col-12 text-center py-5">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Chargement...</span>
@@ -110,38 +105,37 @@
                 </div>
             </div>
 
-            <!-- Section : Préférences -->
             <div id="app-settings" class="settings-section">
                 <div class="card shadow-sm">
                     <div class="card-header bg-gradient-paysible text-white">
-                        <h5 class="mb-0"><i class="bi bi-sliders"></i> Préférences de l'Application</h5>
+                        <h5 class="mb-0"><i class="bi bi-sliders"></i> {{ _('settings_title') }}</h5>
                     </div>
                     <div class="card-body">
                         <div id="settings-alert" class="alert d-none" role="alert"></div>
                         
                         <form id="app-settings-form">
-                            <h6 class="mb-3 text-primary-paysible">Notifications</h6>
+                            <h6 class="mb-3 text-primary-paysible">{{ _('title_notifs') }}</h6>
                             
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" id="notif_transactions" checked>
                                 <label class="form-check-label" for="notif_transactions">
-                                    Recevoir des notifications pour les transactions
+                                    {{ _('lbl_notif_tx') }}
                                 </label>
                             </div>
                             
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" id="notif_email" checked>
                                 <label class="form-check-label" for="notif_email">
-                                    Recevoir des résumés par email
+                                    {{ _('lbl_notif_email') }}
                                 </label>
                             </div>
                             
                             <hr class="my-4">
                             
-                            <h6 class="mb-3 text-primary-paysible">Affichage</h6>
+                            <h6 class="mb-3 text-primary-paysible">{{ _('title_display') }}</h6>
                             
                             <div class="mb-3">
-                                <label for="currency" class="form-label">Devise par défaut</label>
+                                <label for="currency" class="form-label">{{ _('lbl_currency') }}</label>
                                 <select class="form-select" id="currency">
                                     <option value="EUR" selected>Euro (€)</option>
                                     <option value="USD">Dollar ($)</option>
@@ -150,15 +144,19 @@
                             </div>
                             
                             <div class="mb-3">
-                                <label for="language" class="form-label">Langue</label>
+                                <label for="language" class="form-label">{{ _('lbl_language') }}</label>
                                 <select class="form-select" id="language">
-                                    <option value="fr" selected>Français</option>
-                                    <option value="en">English</option>
-                                    <option value="es">Español</option>
+                                    <option value="fr" {% if current_lang == 'fr' %}selected{% endif %}>Français</option>
+                                    <option value="en" {% if current_lang == 'en' %}selected{% endif %}>English</option>
+                                    <option value="es" {% if current_lang == 'es' %}selected{% endif %}>Español</option>
                                 </select>
                             </div>
                             
                             <hr class="my-4">
+                            
+                            <button type="submit" class="btn btn-primary-paysible">
+                                <i class="bi bi-save"></i> {{ _('btn_save') }}
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -168,45 +166,64 @@
     </div>
 </div>
 
-<!-- Modal : Ajouter un compte -->
 <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-gradient-paysible text-white">
                 <h5 class="modal-title" id="addAccountModalLabel">
-                    <i class="bi bi-plus-circle"></i> Ouvrir un nouveau compte
+                    <i class="bi bi-plus-circle"></i> {{ _('modal_new_account_title') }}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="add-account-form">
                     <div class="mb-3">
-                        <label for="account_type" class="form-label">Type de compte</label>
+                        <label for="account_type" class="form-label">{{ _('lbl_account_type') }}</label>
                         <select class="form-select" id="account_type" name="type" required>
-                            <option value="">Sélectionnez un type</option>
-                            <option value="CHECKING">Compte Courant</option>
-                            <option value="SAVINGS">Compte Épargne</option>
+                            <option value="">{{ _('select_type') }}</option>
+                            <option value="CHECKING">{{ _('type_checking') }}</option>
+                            <option value="SAVINGS">{{ _('type_savings') }}</option>
                         </select>
                     </div>
                     
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Un IBAN sera généré automatiquement lors de la création du compte.
+                        <i class="bi bi-info-circle"></i> {{ _('msg_iban_auto') }}
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('btn_cancel') }}</button>
                 <button type="button" class="btn btn-primary-paysible" id="btn-create-account">
-                    <i class="bi bi-check-circle"></i> Créer le compte
+                    <i class="bi bi-check-circle"></i> {{ _('btn_create_confirm') }}
                 </button>
             </div>
         </div>
     </div>
 </div>
-
-
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    window.PageTranslations = {
+        // Pour les cartes de comptes
+        type_CHECKING: "{{ _('type_checking') }}",
+        type_SAVINGS: "{{ _('type_savings') }}",
+        badge_CHECKING: "{{ _('type_checking_short') }}",
+        badge_SAVINGS: "{{ _('type_savings_short') }}",
+        lbl_balance: "{{ _('lbl_current_balance') }}",
+        btn_close: "{{ _('btn_close_account') }}",
+        lbl_created: "{{ _('lbl_created_on') }}",
+        
+        // Pour les messages d'alerte (Création / Suppression)
+        msg_created: "{{ _('msg_account_created') }}",
+        msg_err_create: "{{ _('err_create_account') }}",
+        confirm_delete: "{{ _('msg_confirm_delete') }}",
+        msg_closed: "{{ _('msg_account_closed') }}",
+        
+        // États vides
+        msg_iban_pending: "{{ _('msg_iban_pending') }}",
+        empty_state: "{{ _('msg_empty_accounts') }}"
+    };
+</script>
 <script src="{{ request.url_for('static', path='js/settings.js') }}"></script>
 {% endblock %}

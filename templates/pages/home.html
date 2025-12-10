@@ -1,16 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Mon Compte - PAYsible{% endblock %}
+{% block title %}{{ _('nav_home') }} - PAYsible{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <!-- En-tête avec information utilisateur -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="section-title mb-2">Bienvenue, {{ user_name or user_email }}</h1>
-                    <p class="text-muted">Voici un aperçu de vos comptes et transactions</p>
+                    <h1 class="section-title mb-2">{{ _('welcome_user', name=user_name or user_email) }}</h1>
+                    <p class="text-muted">{{ _('home_subtitle_user') }}</p>
                 </div>
                 <div>
                     <span class="badge bg-primary-paysible px-3 py-2">
@@ -21,13 +20,12 @@
         </div>
     </div>
 
-    <!-- Compte Principal -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-gradient-paysible text-white py-3">
                     <h5 class="mb-0">
-                        <i class="bi bi-wallet2"></i> Compte Principal
+                        <i class="bi bi-wallet2"></i> {{ _('main_account') }}
                     </h5>
                 </div>
                 <div class="card-body p-4">
@@ -43,7 +41,7 @@
                         </div>
                         <div class="col-md-4 text-md-end">
                             <a href="/virement" class="btn btn-primary-paysible w-100">
-                                <i class="bi bi-arrow-left-right"></i> Nouveau virement
+                                <i class="bi bi-arrow-left-right"></i> {{ _('btn_new_transfer') }}
                             </a>
                         </div>
                     </div>
@@ -52,11 +50,10 @@
         </div>
     </div>
 
-    <!-- Aperçu des comptes -->
     <div class="row mb-4">
         <div class="col-12">
             <h4 class="section-title mb-3">
-                <i class="bi bi-bank"></i> Mes Comptes
+                <i class="bi bi-bank"></i> {{ _('my_accounts') }}
             </h4>
         </div>
         
@@ -71,14 +68,14 @@
                                 <small class="text-muted">N° {{ account.id }}</small>
                             </div>
                             <span class="badge {% if account.is_main %}bg-gold-paysible{% else %}bg-secondary{% endif %}">
-                                {% if account.is_main %}Principal{% else %}Secondaire{% endif %}
+                                {% if account.is_main %}{{ _('badge_main') }}{% else %}{{ _('badge_secondary') }}{% endif %}
                             </span>
                         </div>
                         <h4 class="text-primary-paysible mb-3">
                             <strong>{{ account.balance or '0.00' }} €</strong>
                         </h4>
                         <a href="/dashboard#compte-{{ account.id }}" class="btn btn-sm btn-outline-primary w-100">
-                            <i class="bi bi-eye"></i> Voir détails
+                            <i class="bi bi-eye"></i> {{ _('btn_view_details') }}
                         </a>
                     </div>
                 </div>
@@ -89,9 +86,9 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-body text-center py-5">
                         <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-                        <p class="text-muted mt-3 mb-0">Aucun compte supplémentaire trouvé</p>
+                        <p class="text-muted mt-3 mb-0">{{ _('no_accounts_found') }}</p>
                         <a href="/settings#accounts" class="btn btn-primary-paysible mt-3">
-                            <i class="bi bi-plus-circle"></i> Créer un nouveau compte
+                            <i class="bi bi-plus-circle"></i> {{ _('btn_create_account_short') }}
                         </a>
                     </div>
                 </div>
@@ -99,7 +96,6 @@
         {% endif %}
     </div>
 
-    <!-- Dernières transactions -->
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -107,12 +103,12 @@
                     <div class="row align-items-center">
                         <div class="col-md-6">
                             <h5 class="mb-0">
-                                <i class="bi bi-clock-history"></i> Dernières Transactions
+                                <i class="bi bi-clock-history"></i> {{ _('latest_transactions') }}
                             </h5>
                         </div>
                         <div class="col-md-6">
                             <div class="d-flex justify-content-end align-items-center gap-2">
-                                <label for="account-filter" class="mb-0 me-2 small">Compte :</label>
+                                <label for="account-filter" class="mb-0 me-2 small">{{ _('lbl_account_filter') }}</label>
                                 <select id="account-filter" class="form-select form-select-sm" style="width: auto;">
                                     {% for account in accounts %}
                                     <option value="{{ account.id }}" {% if loop.first %}selected{% endif %}>
@@ -133,9 +129,9 @@
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Date</th>
-                                                <th>Description</th>
-                                                <th class="text-end">Montant</th>
+                                                <th>{{ _('th_date') }}</th>
+                                                <th>{{ _('lbl_description') }}</th>
+                                                <th class="text-end">{{ _('lbl_amount') }}</th>
                                                 <th class="text-center">Statut</th>
                                             </tr>
                                         </thead>
@@ -168,7 +164,7 @@
                             {% else %}
                                 <div class="text-center py-5">
                                     <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
-                                    <p class="text-muted mt-3 mb-0">Aucune transaction pour ce compte</p>
+                                    <p class="text-muted mt-3 mb-0">{{ _('no_transactions') }}</p>
                                 </div>
                             {% endif %}
                         </div>
@@ -176,7 +172,7 @@
                     {% else %}
                         <div class="text-center py-5">
                             <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-3 mb-0">Aucune transaction récente</p>
+                            <p class="text-muted mt-3 mb-0">{{ _('no_transactions') }}</p>
                         </div>
                     {% endif %}
                 </div>
@@ -184,14 +180,13 @@
         </div>
     </div>
 
-    <!-- Statistiques rapides -->
     <div class="row mt-4">
         <div class="col-md-4 mb-3">
             <div class="card border-0 shadow-sm text-center">
                 <div class="card-body">
                     <i class="bi bi-arrow-up-circle text-success" style="font-size: 2rem;"></i>
                     <h5 class="mt-2 mb-1">{{ stats.total_income or '0.00' }} €</h5>
-                    <p class="text-muted mb-0"><small>Revenus ce mois</small></p>
+                    <p class="text-muted mb-0"><small>{{ _('stats_income') }}</small></p>
                 </div>
             </div>
         </div>
@@ -200,7 +195,7 @@
                 <div class="card-body">
                     <i class="bi bi-arrow-down-circle text-danger" style="font-size: 2rem;"></i>
                     <h5 class="mt-2 mb-1">{{ stats.total_expenses or '0.00' }} €</h5>
-                    <p class="text-muted mb-0"><small>Dépenses ce mois</small></p>
+                    <p class="text-muted mb-0"><small>{{ _('stats_expenses') }}</small></p>
                 </div>
             </div>
         </div>
@@ -209,7 +204,7 @@
                 <div class="card-body">
                     <i class="bi bi-bar-chart text-blue-paysible" style="font-size: 2rem;"></i>
                     <h5 class="mt-2 mb-1">{{ stats.transaction_count or '0' }}</h5>
-                    <p class="text-muted mb-0"><small>Transactions ce mois</small></p>
+                    <p class="text-muted mb-0"><small>{{ _('stats_count') }}</small></p>
                 </div>
             </div>
         </div>

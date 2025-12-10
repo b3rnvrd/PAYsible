@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Bénéficiaires - PAYsible{% endblock %}
+{% block title %}{{ _('nav_beneficiaries') }} - PAYsible{% endblock %}
 
 {% block content %}
 <div class="container py-5 fade-in"> 
     
     <h2 class="section-title mb-4"> 
-        <i class="bi bi-people-fill"></i> Gestion des Bénéficiaires
+        <i class="bi bi-people-fill"></i> {{ _('benef_title') }}
     </h2>
 
     <div id="alert-container"></div>
@@ -16,11 +16,11 @@
             
             <div class="card mb-4"> 
                 <div class="card-header bg-primary-paysible text-white">
-                    <i class="bi bi-person-plus-fill"></i> Ajouter un bénéficiaire
+                    <i class="bi bi-person-plus-fill"></i> {{ _('add_beneficiary') }}
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Nom du titulaire</label>
+                        <label class="form-label fw-bold">{{ _('lbl_holder_name') }}</label>
                         <input type="text" class="form-control" id="newName" placeholder="Ex: Maman">
                     </div>
                     <div class="mb-3">
@@ -28,27 +28,27 @@
                         <input type="text" class="form-control" id="newIban" placeholder="FR76...">
                     </div>
                     <button onclick="addBeneficiary()" class="btn btn-primary-paysible w-100">
-                        <i class="bi bi-check-circle"></i> Enregistrer
+                        <i class="bi bi-check-circle"></i> {{ _('btn_register') }}
                     </button>
                 </div>
             </div>
 
             <div class="card border-warning">
                 <div class="card-header bg-warning text-dark">
-                    <i class="bi bi-pencil-fill"></i> Modifier
+                    <i class="bi bi-pencil-fill"></i> {{ _('edit_beneficiary') }}
                 </div>
                 <div class="card-body">
                     <input type="hidden" id="updateId">
                     <div class="mb-3">
-                        <label class="form-label text-muted">Nouveau Nom</label>
+                        <label class="form-label text-muted">{{ _('lbl_new_name') }}</label>
                         <input type="text" class="form-control" id="updateName">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted">Nouvel IBAN</label>
+                        <label class="form-label text-muted">{{ _('lbl_new_iban') }}</label>
                         <input type="text" class="form-control" id="updateIban">
                     </div>
                     <button onclick="updateBeneficiary()" class="btn btn-gold-paysible w-100">
-                        <i class="bi bi-arrow-repeat"></i> Mettre à jour
+                        <i class="bi bi-arrow-repeat"></i> {{ _('btn_update') }}
                     </button>
                 </div>
             </div>
@@ -58,9 +58,9 @@
         <div class="col-md-8">
             <div class="card h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center border-bottom">
-                    <span class="fw-bold text-primary-paysible">Mes Bénéficiaires enregistrés</span>
+                    <span class="fw-bold text-primary-paysible">{{ _('my_registered_benefs') }}</span>
                     <button onclick="loadBeneficiaries()" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise"></i> Actualiser
+                        <i class="bi bi-arrow-clockwise"></i> {{ _('btn_refresh') }}
                     </button>
                 </div>
                 <div class="card-body p-0">
@@ -68,9 +68,9 @@
                         <table class="table table-hover mb-0 align-middle">
                             <thead class="table-light text-secondary-paysible">
                                 <tr>
-                                    <th>Nom</th>
-                                    <th>IBAN</th>
-                                    <th class="text-end">Actions</th>
+                                    <th>{{ _('th_name') }}</th>
+                                    <th>{{ _('th_iban') }}</th>
+                                    <th class="text-end">{{ _('th_actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody id="beneficiaryList">
