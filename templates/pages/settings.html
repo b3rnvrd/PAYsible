@@ -199,4 +199,18 @@
 
 {% block extra_js %}
 <script src="{{ request.url_for('static', path='js/settings.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Récupère le hash de l'URL : #profile, #accounts, #app-settings, etc.
+    const hash = window.location.hash.replace('#', '');
+
+    if (hash) {
+        const link = document.querySelector('.settings-nav a[data-section="' + hash + '"]');
+        if (link) {
+            // On simule un clic sur l’onglet correspondant
+            link.click();
+        }
+    }
+});
+</script>
 {% endblock %}
