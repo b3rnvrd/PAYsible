@@ -208,10 +208,18 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     )
 
 
+from app.core.dependencies import get_user_email_from_session
+
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("pages/login.html",
-                                      {"request": request, "user_email": get_user_email_from_session(request)})
+    return templates.TemplateResponse(
+        "pages/login.html",
+        {
+            "request": request,
+            "user_email": get_user_email_from_session(request),  # pour la navbar
+            "form_email": "",                                   # champ du formulaire
+        },
+    )
 
 
 @router.post("/login", response_class=HTMLResponse)
@@ -221,35 +229,35 @@ async def login_submit(
     db: Session = Depends(get_db),
 ):
     email = (email or "").strip().lower()
+
     if not email or len(email) > 255:
         return templates.TemplateResponse(
             "pages/login.html",
             {
                 "request": request,
                 "title": "Connexion - PAYsible",
-                "user_email": "",
+                "user_email": get_user_email_from_session(request),  # connecté ou pas
+                "form_email": "",                                   # on vide le champ
                 "error": "Veuillez saisir une adresse e-mail valide.",
             },
         )
 
-    # Protection SQL injection :
     user = db.query(UserDB).filter(UserDB.email == email).first()
 
     if not user:
-        # Email pas trouvé → on reste sur la page login
         return templates.TemplateResponse(
             "pages/login.html",
             {
                 "request": request,
                 "title": "Connexion - PAYsible",
-                "user_email": email,
+                "user_email": get_user_email_from_session(request),
+                "form_email": email,  # on garde ce qu'il a tapé dans le champ
                 "error": (
                     "Aucun compte trouvé avec cet e-mail. "
                     "Veuillez créer un compte avec le bouton « Ajouter un compte »."
                 ),
             },
         )
-
     if hasattr(request, "session"):
         request.session["user_email"] = user.email
 
