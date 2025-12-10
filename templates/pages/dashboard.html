@@ -45,9 +45,14 @@
             <div class="card shadow-sm border-0 mb-4 sticky-top" style="top: 100px; z-index: 1;">
                 <div class="card-body">
                     <h6 class="card-title text-center mb-4">Où va votre argent ?</h6>
-                    <div style="position: relative; height: 300px;">
+                    
+                    <div style="position: relative; height: 260px;">
                         <canvas id="expensesChart"></canvas>
                     </div>
+
+                    <div id="js-legend" class="mt-4 d-flex flex-wrap justify-content-center gap-2">
+                        </div>
+
                     <div class="mt-4 text-center">
                         <a href="/soldes" class="btn btn-outline-primary btn-sm rounded-pill">
                             Voir le détail des transactions
@@ -64,26 +69,25 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // Configuration commune pour le style
+    // --- Configuration commune ---
     const commonOptions = {
         responsive: true,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false } }, // On cache la légende par défaut partout
         scales: {
             x: { grid: { display: false } },
             y: { grid: { borderDash: [5, 5] } }
         },
         elements: {
-            line: { tension: 0.4 }, // Courbes douces
+            line: { tension: 0.4 },
             point: { radius: 3, hoverRadius: 6 }
         }
     };
 
-    // --- 1. Génération automatique des graphiques via la boucle Jinja ---
+    // --- 1. Graphiques linéaires (Comptes) ---
     {% for account in accounts_data %}
         new Chart(document.getElementById('chart-account-{{ account.id }}').getContext('2d'), {
             type: 'line',
             data: {
-                // On utilise | safe pour injecter le JSON généré par Python
                 labels: JSON.parse('{{ account.labels | safe }}'),
                 datasets: [{
                     label: 'Solde (€)',
@@ -99,27 +103,81 @@
         });
     {% endfor %}
 
-    // --- 2. Graphique Camembert Global ---
+    // --- 2. Graphique Camembert (Global) ---
     const ctxPie = document.getElementById('expensesChart');
     if (ctxPie) {
+        const pieLabels = JSON.parse('{{ chart_pie_labels | safe }}');
+        const pieData = JSON.parse('{{ chart_pie_data | safe }}');
+        
+        // Palette de couleurs définie manuellement pour être réutilisée dans la légende HTML
+        const colors = [
+            '#1D3D6A', '#38A5E4', '#F4C448', '#2474C6', '#6610f2', 
+            '#20c997', '#dc3545', '#fd7e14', '#e83e8c', '#6f42c1',
+            '#17a2b8', '#ffc107', '#28a745', '#343a40', '#6c757d'
+        ];
+
+        // Création du Chart
         new Chart(ctxPie.getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: JSON.parse('{{ chart_pie_labels | safe }}'),
+                labels: pieLabels,
                 datasets: [{
-                    data: JSON.parse('{{ chart_pie_data | safe }}'),
-                    backgroundColor: ['#1D3D6A', '#38A5E4', '#F4C448', '#2474C6', '#6610f2', '#20c997', '#dc3545'],
+                    data: pieData,
+                    backgroundColor: colors,
                     borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // Permet de remplir exactement les 260px
                 plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } }
+                    legend: { display: false }, // IMPORTANT : On cache la légende interne
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) { label += ': '; }
+                                let value = context.raw;
+                                label += value.toFixed(2) + ' €';
+                                return label;
+                            }
+                        }
+                    }
                 },
-                cutout: '70%'
+                cutout: '70%',
+                layout: { padding: 0 }
             }
+        });
+
+        // --- GÉNÉRATION DE LA LÉGENDE HTML EXTERNE ---
+        const legendContainer = document.getElementById('js-legend');
+        
+        pieLabels.forEach((label, index) => {
+            // On cycle sur les couleurs si on a plus de catégories que de couleurs
+            const color = colors[index % colors.length];
+            
+            // Création de l'élément visuel (Badge)
+            const item = document.createElement('div');
+            item.className = 'd-flex align-items-center mb-1 me-2';
+            item.style.fontSize = '0.85rem'; // Texte un peu plus petit
+            
+            // La pastille de couleur
+            const box = document.createElement('span');
+            box.style.display = 'inline-block';
+            box.style.width = '12px';
+            box.style.height = '12px';
+            box.style.backgroundColor = color;
+            box.style.borderRadius = '3px';
+            box.style.marginRight = '6px';
+
+            // Le texte
+            const text = document.createElement('span');
+            text.innerText = label;
+            text.className = 'text-muted';
+
+            item.appendChild(box);
+            item.appendChild(text);
+            legendContainer.appendChild(item);
         });
     }
 </script>
