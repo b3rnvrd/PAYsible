@@ -15,8 +15,10 @@ from app.models.user import UserDB
 from app.models.account import AccountDB
 from app.models.transaction import TransactionDB, TransactionEntryDB
 
+
 router = APIRouter(tags=["Web Pages"])
 templates = Jinja2Templates(directory="templates")
+
 
 # --- Fonctions Utilitaires ---
 def get_account_balance(db: Session, account_id: int) -> float:
@@ -24,6 +26,7 @@ def get_account_balance(db: Session, account_id: int) -> float:
     balance = db.query(func.sum(TransactionEntryDB.amount)) \
         .filter(TransactionEntryDB.account_id == account_id).scalar()
     return float(balance) if balance else 0.0
+
 
 @router.get("/", response_class=HTMLResponse)
 async def homepage(request: Request, db: Session = Depends(get_db)):
@@ -40,7 +43,9 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
         accounts_data = []
         total_balance = 0
         main_account_data = None
+
         db_accounts = user.accounts
+
         for index, acc in enumerate(db_accounts):
             bal = get_account_balance(db, acc.id)
             acc_info = {
@@ -52,11 +57,13 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
             }
             accounts_data.append(acc_info)
             total_balance += bal
+
             if index == 0:
                 main_account_data = acc_info
 
         # 3. Récupérer les transactions récentes
         user_account_ids = [acc.id for acc in user.accounts]
+
         recent_entries = db.query(TransactionEntryDB) \
             .join(TransactionDB) \
             .filter(TransactionEntryDB.account_id.in_(user_account_ids)) \
@@ -77,6 +84,7 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
         # 4. Calculer les statistiques du mois en cours
         current_month = datetime.now().month
         current_year = datetime.now().year
+
         month_entries = db.query(TransactionEntryDB) \
             .join(TransactionDB) \
             .filter(
@@ -90,6 +98,7 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
             "total_expenses": sum(e.amount for e in month_entries if e.amount < 0),
             "transaction_count": len(month_entries)
         }
+
         stats_display = {
             "total_income": f"{stats['total_income']:,.2f}",
             "total_expenses": f"{stats['total_expenses']:,.2f}",
@@ -109,7 +118,9 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
                 "current_date": datetime.now().strftime("%d/%m/%Y")
             }
         )
+
     return templates.TemplateResponse("index.html", {"request": request, "user_email": None})
+
 
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
@@ -210,16 +221,6 @@ async def logout(request: Request):
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@router.get("/settings", response_class=HTMLResponse)
-async def settings_page(request: Request):
-    user_email = get_user_email_from_session(request)
-    if not user_email: return RedirectResponse(url="/login")
-    return templates.TemplateResponse(
-        "pages/settings.html",
-        {"request": request, "user_email": user_email, "title": "Paramètres - PAYsible"}
-    )
-
-
 @router.get("/soldes", response_class=HTMLResponse)
 async def view_soldes(request: Request, db: Session = Depends(get_db)):
     user_email = get_user_email_from_session(request)
@@ -276,4 +277,26 @@ def view_beneficiaries(request: Request):
             "request": request,
             "user_email": user_email
         }
+    )
+
+
+@router.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """
+    Affiche la page des paramètres utilisateur.
+    """
+    user_email = None
+    if hasattr(request, "session"):
+        user_email = request.session.get("user_email")
+
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    return templates.TemplateResponse(
+        "pages/settings.html",
+        {
+            "request": request,
+            "title": "Paramètres - PAYsible",
+            "user_email": user_email,
+        },
     )
