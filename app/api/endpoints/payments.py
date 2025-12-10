@@ -13,7 +13,7 @@ from app.models.transaction import TransactionDB, TransactionEntryDB
 from app.models.beneficiary import BeneficiaryDB
 from sqlalchemy import func
 
-router = APIRouter(prefix="/api/virements", tags=["Virements"])
+router = APIRouter(prefix="/virements", tags=["Virements"])
 
 
 # Schemas Pydantic
