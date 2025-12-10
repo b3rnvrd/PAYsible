@@ -1,0 +1,71 @@
+name: Python application
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest httpx # J'ajoute httpx pour tester la requête
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Test with pytest
+      run: |
+        pytest
+        
+    # --- NOUVELLE ÉTAPE : Test de lancement ---
+    - name: Start Uvicorn and Check Health
+      run: |
+        # 1. Lancer Uvicorn en arrière-plan (&)
+        # On redirige les logs vers un fichier pour pouvoir debuguer si ça plante
+        uvicorn app.main:app --port 8000 > uvicorn.log 2>&1 &
+        SERVER_PID=$!
+        
+        echo "Serveur lancé avec le PID $SERVER_PID. Attente du démarrage..."
+        
+        # 2. Attendre que le serveur soit prêt (max 10 secondes)
+        for i in {1..10}; do
+          if curl -s http://127.0.0.1:8000/status > /dev/null; then
+            echo "✅ Le serveur répond correctement !"
+            
+            # Afficher le statut pour info
+            curl -v http://127.0.0.1:8000/status
+            
+            # Tuer le serveur proprement
+            kill $SERVER_PID
+            exit 0
+          fi
+          echo "Tentative $i/10 : Serveur non prêt, attente 1s..."
+          sleep 1
+        done
+        
+        # 3. Si on arrive ici, c'est que ça a échoué
+        echo "❌ Échec : Le serveur n'a pas démarré à temps."
+        echo "=== LOGS UVICORN ==="
+        cat uvicorn.log
+        kill $SERVER_PID
+        exit 1
