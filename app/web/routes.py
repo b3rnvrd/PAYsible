@@ -61,25 +61,31 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
             if index == 0:
                 main_account_data = acc_info
 
-        # 3. Récupérer les transactions récentes
+        # 3. Récupérer les transactions récentes groupées par compte
         user_account_ids = [acc.id for acc in user.accounts]
 
-        recent_entries = db.query(TransactionEntryDB) \
-            .join(TransactionDB) \
-            .filter(TransactionEntryDB.account_id.in_(user_account_ids)) \
-            .order_by(TransactionDB.date.desc()) \
-            .limit(5).all()
-
-        transactions_data = []
-        for entry in recent_entries:
-            transactions_data.append({
-                "date": entry.transaction.date.strftime("%d/%m/%Y"),
-                "description": entry.transaction.description,
-                "details": entry.description if entry.description != entry.transaction.description else "",
-                "account_id": entry.account_id,
-                "amount": entry.amount,
-                "status": "completed"
-            })
+        # Créer un dictionnaire pour grouper les transactions par compte
+        transactions_by_account = {}
+        
+        for account in db_accounts:
+            # Récupérer les 10 dernières transactions pour ce compte
+            account_entries = db.query(TransactionEntryDB) \
+                .join(TransactionDB) \
+                .filter(TransactionEntryDB.account_id == account.id) \
+                .order_by(TransactionDB.date.desc()) \
+                .limit(10).all()
+            
+            transactions_list = []
+            for entry in account_entries:
+                transactions_list.append({
+                    "date": entry.transaction.date.strftime("%d/%m/%Y"),
+                    "description": entry.transaction.description,
+                    "details": entry.description if entry.description != entry.transaction.description else "",
+                    "amount": entry.amount,
+                    "status": "completed"
+                })
+            
+            transactions_by_account[account.id] = transactions_list
 
         # 4. Calculer les statistiques du mois en cours
         current_month = datetime.now().month
@@ -113,7 +119,7 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
                 "user_name": user.name,
                 "main_account": main_account_data,
                 "accounts": accounts_data,
-                "transactions": transactions_data,
+                "transactions_by_account": transactions_by_account,
                 "stats": stats_display,
                 "current_date": datetime.now().strftime("%d/%m/%Y")
             }

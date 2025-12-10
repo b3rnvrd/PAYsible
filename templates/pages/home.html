@@ -103,56 +103,76 @@
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-clock-history"></i> Dernières Transactions
-                    </h5>
-                    <a href="#" class="btn btn-sm btn-outline-primary">
-                        Voir tout
-                    </a>
+                <div class="card-header bg-white py-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history"></i> Dernières Transactions
+                            </h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end align-items-center gap-2">
+                                <label for="account-filter" class="mb-0 me-2 small">Compte :</label>
+                                <select id="account-filter" class="form-select form-select-sm" style="width: auto;">
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}" {% if loop.first %}selected{% endif %}>
+                                        {{ account.type }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body p-0">
-                    {% if transactions and transactions|length > 0 %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Description</th>
-                                        <th>Compte</th>
-                                        <th class="text-end">Montant</th>
-                                        <th class="text-center">Statut</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for transaction in transactions %}
-                                    <tr>
-                                        <td>
-                                            <small class="text-muted">{{ transaction.date }}</small>
-                                        </td>
-                                        <td>
-                                            <strong>{{ transaction.description or 'Transaction' }}</strong>
-                                            <br>
-                                            <small class="text-muted">{{ transaction.details or '' }}</small>
-                                        </td>
-                                        <td>
-                                            <small>N° {{ transaction.account_id }}</small>
-                                        </td>
-                                        <td class="text-end">
-                                            <strong class="{% if transaction.amount > 0 %}text-success{% else %}text-danger{% endif %}">
-                                                {% if transaction.amount > 0 %}+{% endif %}{{ transaction.amount }} €
-                                            </strong>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge {% if transaction.status == 'completed' %}bg-success{% elif transaction.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
-                                                {{ transaction.status_label or transaction.status or 'Complété' }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    {% if transactions_by_account %}
+                        {% for account_id, account_transactions in transactions_by_account.items() %}
+                        <div class="transaction-list" data-account-id="{{ account_id }}" style="{% if not loop.first %}display: none;{% endif %}">
+                            {% if account_transactions and account_transactions|length > 0 %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Description</th>
+                                                <th class="text-end">Montant</th>
+                                                <th class="text-center">Statut</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for transaction in account_transactions %}
+                                            <tr>
+                                                <td>
+                                                    <small class="text-muted">{{ transaction.date }}</small>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ transaction.description or 'Transaction' }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ transaction.details or '' }}</small>
+                                                </td>
+                                                <td class="text-end">
+                                                    <strong class="{% if transaction.amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                                        {% if transaction.amount > 0 %}+{% endif %}{{ transaction.amount }} €
+                                                    </strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge {% if transaction.status == 'completed' %}bg-success{% elif transaction.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                        {{ transaction.status_label or transaction.status or 'Complété' }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
+                                    <p class="text-muted mt-3 mb-0">Aucune transaction pour ce compte</p>
+                                </div>
+                            {% endif %}
                         </div>
+                        {% endfor %}
                     {% else %}
                         <div class="text-center py-5">
                             <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
@@ -204,4 +224,24 @@
         color: var(--primary-color) !important;
     }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestion du changement de compte pour les transactions
+    document.getElementById('account-filter').addEventListener('change', function() {
+        const selectedAccountId = this.value;
+        
+        // Masquer toutes les listes de transactions
+        document.querySelectorAll('.transaction-list').forEach(list => {
+            list.style.display = 'none';
+        });
+        
+        // Afficher la liste de transactions du compte sélectionné
+        const selectedList = document.querySelector(`.transaction-list[data-account-id="${selectedAccountId}"]`);
+        if (selectedList) {
+            selectedList.style.display = 'block';
+        }
+    });
+</script>
 {% endblock %}
