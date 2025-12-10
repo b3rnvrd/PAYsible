@@ -54,8 +54,7 @@ L'application suit une architecture MVC modulaire séparant les routes Web (rend
 
 ### Authentification & Sécurité
 * **Login simplifié :** Vérification de l'existence de l'email en base de données.
-* **Sessions :** Gestion via `SessionMiddleware` (cookies sécurisés).
-* **Protection :** Redirection automatique vers `/login` si accès non autorisé.
+* * **Ajout d'un utilisateur :** Possibilité de créer un utilisateur
 
 ### Gestion des Comptes
 * **Visualisation :** Tableau de bord avec solde total cumulé et détail par compte.
@@ -70,7 +69,6 @@ L'application suit une architecture MVC modulaire séparant les routes Web (rend
 
 ### Paramètres
 * **Profil Utilisateur :** Modification des informations personnelles (Nom, Tél, Adresse).
-* **Préférences :** Gestion des notifications et de la langue (via `localStorage`).
 
 ### Pages d'Erreur
 * **404 :** Page personnalisée "Astronaute perdu".
