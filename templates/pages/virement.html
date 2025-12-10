@@ -6,7 +6,6 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <!-- En-tête -->
             <div class="text-center mb-4">
                 <h1 class="section-title">
                     <i class="bi bi-arrow-left-right"></i> Nouveau Virement
@@ -14,7 +13,6 @@
                 <p class="text-muted">Effectuez un virement entre vos comptes ou vers un bénéficiaire</p>
             </div>
 
-            <!-- Choix du type de virement -->
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <div class="card h-100 border-0 shadow-sm virement-type-card" id="card-interne">
@@ -40,7 +38,6 @@
                 </div>
             </div>
 
-            <!-- Formulaire de virement interne -->
             <div id="form-interne" class="card border-0 shadow-sm" style="display: none;">
                 <div class="card-header bg-gradient-paysible text-white py-3">
                     <h5 class="mb-0">
@@ -130,7 +127,6 @@
                 </div>
             </div>
 
-            <!-- Formulaire de virement vers bénéficiaire -->
             <div id="form-beneficiaire" class="card border-0 shadow-sm" style="display: none;">
                 <div class="card-header bg-gradient-paysible text-white py-3">
                     <h5 class="mb-0">
@@ -229,7 +225,6 @@
                 </div>
             </div>
 
-            <!-- Redirection vers bénéficiaires (JavaScript) -->
             <div class="text-center mt-4">
                 <a href="/" class="text-muted">
                     <i class="bi bi-house"></i> Retour à l'accueil
@@ -271,6 +266,9 @@
 <script>
     // Gestion du choix du type de virement
     document.getElementById('card-interne').addEventListener('click', function() {
+        // CORRECTION : Masque l'autre formulaire
+        document.getElementById('form-beneficiaire').style.display = 'none';
+
         document.getElementById('form-interne').style.display = 'block';
         document.querySelectorAll('.virement-type-card').forEach(card => {
             card.classList.remove('selected');
@@ -282,6 +280,9 @@
     });
 
     document.getElementById('card-beneficiaire').addEventListener('click', function() {
+        // CORRECTION : Masque l'autre formulaire
+        document.getElementById('form-interne').style.display = 'none';
+
         document.getElementById('form-beneficiaire').style.display = 'block';
         document.querySelectorAll('.virement-type-card').forEach(card => {
             card.classList.remove('selected');
@@ -294,6 +295,7 @@
 
     function resetForm() {
         document.getElementById('form-interne').style.display = 'none';
+        // CORRECTION : Masque le formulaire Bénéficiaire aussi
         document.getElementById('form-beneficiaire').style.display = 'none';
         document.querySelectorAll('.virement-type-card').forEach(card => {
             card.classList.remove('selected');
@@ -303,7 +305,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Validation : empêcher de sélectionner le même compte
+    // Validation : empêcher de sélectionner le même compte (pour le formulaire interne)
     document.getElementById('compte_debit')?.addEventListener('change', function() {
         const creditSelect = document.getElementById('compte_credit');
         if (creditSelect.value === this.value && this.value !== '') {
