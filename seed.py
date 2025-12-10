@@ -81,6 +81,30 @@ db.add_all([acc_courant, acc_epargne, acc_pro, acc_jeff])
 db.commit()
 print("✅ 4 Comptes bancaires créés")
 
+# --- 3B. SOLDE DE DÉPART POSITIF (GARANTIE) ---
+# Ajout d'une transaction initiale pour garantir un solde positif avant les 40 transactions aléatoires.
+INITIAL_BALANCE = 5000.00
+date_init = datetime.now() - timedelta(days=181) # Un jour avant la fenêtre de 180 jours
+
+txn_init = TransactionDB(
+    type="Dépôt Initial", amount=INITIAL_BALANCE, 
+    description="Dépôt de Solde Initial de Démo", date=date_init
+)
+db.add(txn_init)
+db.commit()
+db.refresh(txn_init)
+
+entry_init = TransactionEntryDB(
+    amount=INITIAL_BALANCE, type="CREDIT", 
+    description="Solde de départ",
+    account_id=acc_courant.id,
+    transaction_id=txn_init.id
+)
+db.add(entry_init)
+db.commit()
+print(f"💰 Solde initial de +{INITIAL_BALANCE:.2f}€ ajouté au compte courant.")
+
+
 # --- 4. GÉNÉRATION MASSIVE DE TRANSACTIONS ---
 descriptions_depenses = [
     ("Supermarché", -50, -200), ("Restaurant", -15, -120),
@@ -149,7 +173,8 @@ for i in range(6):
     db.add(entry_out)
     db.add(entry_in)
 
-print("✅ 50+ Transactions générées")
+db.commit() # Commit final pour les 40 transactions et les virements d'épargne
+print("✅ 50+ Transactions générées (avec Solde Initial garantissant le positif)")
 
 # --- 5. AJOUT DE BÉNÉFICIAIRES ---
 # Ces IBANs doivent aussi respecter le format FR + 25 chiffres
