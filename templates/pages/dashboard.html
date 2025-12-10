@@ -23,7 +23,15 @@
             <div class="card shadow-sm border-0 mb-4" id="compte-{{ account.id }}">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="badge bg-primary-paysible me-2">{{ account.type }}</span>
+                        <span class="badge bg-primary-paysible me-2">
+                            {% if account.type == 'Courant' %}
+                                {{ _('type_checking') }}
+                            {% elif account.type == 'Epargne' %}
+                                {{ _('type_savings') }}
+                            {% else %}
+                                {{ account.type }}
+                            {% endif %}
+                        </span>
                         <small class="text-muted font-monospace">{{ account.iban }}</small>
                     </div>
                     <span class="fw-bold fs-5">{{ account.balance }} €</span>
@@ -45,12 +53,13 @@
             <div class="card shadow-sm border-0 mb-4 sticky-top" style="top: 100px; z-index: 1;">
                 <div class="card-body">
                     <h6 class="card-title text-center mb-4">{{ _('where_money_goes') }}</h6>
+                    
                     <div style="position: relative; height: 260px;">
                         <canvas id="expensesChart"></canvas>
                     </div>
 
                     <div id="js-legend" class="mt-4 d-flex flex-wrap justify-content-center gap-2">
-                    </div>
+                        </div>
 
                     <div class="mt-4 text-center">
                         <a href="/soldes" class="btn btn-outline-primary btn-sm rounded-pill">

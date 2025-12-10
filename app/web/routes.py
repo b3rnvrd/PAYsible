@@ -48,7 +48,7 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
             acc_info = {
                 "id": acc.id,
                 "iban": acc.iban,
-                "type": f"Compte {acc.type}",
+                "type": acc.type,
                 "balance": f"{bal:,.2f}",
                 "is_main": (index == 0)
             }
@@ -476,7 +476,7 @@ async def virement_page(request: Request, db: Session = Depends(get_db)):
         balance = get_account_balance(db, acc.id)
         accounts_data.append({
             "id": acc.id,
-            "type": f"Compte {acc.type}",
+            "type": acc.type,
             "iban": acc.iban,
             "balance": f"{balance:,.2f}"
         })
@@ -532,7 +532,7 @@ async def virement_interne_submit(
         balance = get_account_balance(db, acc.id)
         accounts_data.append({
             "id": acc.id,
-            "type": f"Compte {acc.type}",
+            "type": acc.type,
             "iban": acc.iban,
             "balance": f"{balance:,.2f}"
         })

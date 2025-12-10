@@ -31,12 +31,20 @@
                 <div class="card-body p-4">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h6 class="text-muted mb-2">{{ main_account.type or 'Compte Courant' }}</h6>
+                            <h6 class="text-muted mb-2">
+                                {% if main_account.type == 'Courant' %}
+                                    {{ _('type_checking') }}
+                                {% elif main_account.type == 'Epargne' %}
+                                    {{ _('type_savings') }}
+                                {% else %}
+                                    {{ main_account.type }}
+                                {% endif %}
+                            </h6>
                             <h2 class="text-primary-paysible mb-2">
                                 <strong>{{ main_account.balance or '0.00' }} €</strong>
                             </h2>
                             <p class="mb-0 text-muted">
-                                <small>Compte N° {{ main_account.id or 'XXXXXX' }}</small>
+                                <small>N° {{ main_account.id or 'XXXXXX' }}</small>
                             </p>
                         </div>
                         <div class="col-md-4 text-md-end">
@@ -64,7 +72,15 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <h6 class="card-subtitle text-muted mb-1">{{ account.type or 'Compte' }}</h6>
+                                <h6 class="card-subtitle text-muted mb-1">
+                                    {% if account.type == 'Courant' %}
+                                        {{ _('type_checking') }}
+                                    {% elif account.type == 'Epargne' %}
+                                        {{ _('type_savings') }}
+                                    {% else %}
+                                        {{ account.type }}
+                                    {% endif %}
+                                </h6>
                                 <small class="text-muted">N° {{ account.id }}</small>
                             </div>
                             <span class="badge {% if account.is_main %}bg-gold-paysible{% else %}bg-secondary{% endif %}">
@@ -112,7 +128,13 @@
                                 <select id="account-filter" class="form-select form-select-sm" style="width: auto;">
                                     {% for account in accounts %}
                                     <option value="{{ account.id }}" {% if loop.first %}selected{% endif %}>
-                                        {{ account.type }}
+                                        {% if 'Courant' in account.type %}
+                                            {{ _('type_checking') }}
+                                        {% elif 'Epargne' in account.type %}
+                                            {{ _('type_savings') }}
+                                        {% else %}
+                                            {{ account.type }}
+                                        {% endif %}
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -131,7 +153,7 @@
                                             <tr>
                                                 <th>{{ _('th_date') }}</th>
                                                 <th>{{ _('lbl_description') }}</th>
-                                                <th class="text-end">{{ _('lbl_amount') }}</th>
+                                                <th class="text-end">{{ _('th_amount') }}</th>
                                                 <th class="text-center">Statut</th>
                                             </tr>
                                         </thead>
@@ -153,7 +175,7 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <span class="badge {% if transaction.status == 'completed' %}bg-success{% elif transaction.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
-                                                        {{ transaction.status_label or transaction.status or 'Complété' }}
+                                                        Complété
                                                     </span>
                                                 </td>
                                             </tr>
@@ -223,16 +245,11 @@
 
 {% block extra_js %}
 <script>
-    // Gestion du changement de compte pour les transactions
     document.getElementById('account-filter').addEventListener('change', function() {
         const selectedAccountId = this.value;
-        
-        // Masquer toutes les listes de transactions
         document.querySelectorAll('.transaction-list').forEach(list => {
             list.style.display = 'none';
         });
-        
-        // Afficher la liste de transactions du compte sélectionné
         const selectedList = document.querySelector(`.transaction-list[data-account-id="${selectedAccountId}"]`);
         if (selectedList) {
             selectedList.style.display = 'block';

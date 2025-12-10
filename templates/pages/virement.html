@@ -66,7 +66,8 @@
                                 <option value="">{{ _('select_account') }}</option>
                                 {% for account in accounts %}
                                 <option value="{{ account.id }}">
-                                    {{ account.type }} ({{ account.iban }}) - Solde: {{ account.balance }} €
+                                    {% if account.type == 'Courant' %}{{ _('type_checking') }}{% elif account.type == 'Epargne' %}{{ _('type_savings') }}{% else %}{{ account.type }}{% endif %} 
+                                    ({{ account.iban }}) - Solde: {{ account.balance }} €
                                 </option>
                                 {% endfor %}
                             </select>
