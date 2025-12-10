@@ -183,36 +183,123 @@ async def login_page(request: Request):
 
 
 @router.post("/login", response_class=HTMLResponse)
-async def login_submit(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
-    email = email.strip()
-    if not email:
+async def login_submit(
+    request: Request,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    email = (email or "").strip().lower()
+    if not email or len(email) > 255:
         return templates.TemplateResponse(
             "pages/login.html",
             {
                 "request": request,
                 "title": "Connexion - PAYsible",
                 "user_email": "",
-                "error": "Veuillez saisir une adresse e-mail.",
+                "error": "Veuillez saisir une adresse e-mail valide.",
             },
         )
 
+    # Protection SQL injection :
     user = db.query(UserDB).filter(UserDB.email == email).first()
 
     if not user:
+        # Email pas trouvé → on reste sur la page login
         return templates.TemplateResponse(
             "pages/login.html",
             {
                 "request": request,
                 "title": "Connexion - PAYsible",
                 "user_email": email,
-                "error": "Aucun compte trouvé avec cet email. Essayez : client@paysible.com",
+                "error": (
+                    "Aucun compte trouvé avec cet e-mail. "
+                    "Veuillez créer un compte avec le bouton « Ajouter un compte »."
+                ),
             },
         )
 
     if hasattr(request, "session"):
-        request.session["user_email"] = email
+        request.session["user_email"] = user.email
 
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """
+    Affiche la page de création de compte (user).
+    """
+    return templates.TemplateResponse(
+        "pages/register.html",
+        {
+            "request": request,
+            "title": "Créer un compte - PAYsible",
+            "error": None,
+        },
+    )
+
+
+@router.post("/register", response_class=HTMLResponse)
+async def register_submit(
+    request: Request,
+    name: str = Form(""),
+    last_name: str = Form(""),
+    phone_number: str = Form(""),
+    address: str = Form(""),
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Crée un utilisateur (UserDB) à partir du formulaire.
+    Si l'email existe déjà → erreur.
+    Sinon → crée le user et redirige vers /login avec l'email pré-rempli.
+    """
+    email = (email or "").strip().lower()
+
+    if not email or len(email) > 255:
+        return templates.TemplateResponse(
+            "pages/register.html",
+            {
+                "request": request,
+                "title": "Créer un compte - PAYsible",
+                "error": "Veuillez saisir une adresse e-mail valide.",
+            },
+        )
+
+    # Vérifier si un user existe déjà pour cet email
+    existing = db.query(UserDB).filter(UserDB.email == email).first()
+    if existing:
+        return templates.TemplateResponse(
+            "pages/register.html",
+            {
+                "request": request,
+                "title": "Créer un compte - PAYsible",
+                "error": "Un compte existe déjà avec cet e-mail. Veuillez vous connecter.",
+            },
+        )
+
+    # Création du user
+    user = UserDB(
+        name=(name or "").strip() or None,
+        last_name=(last_name or "").strip() or None,
+        phone_number=(phone_number or "").strip() or None,
+        address=(address or "").strip() or None,
+        email=email,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # On ne le connecte pas d'office : on le renvoie au login avec un message
+    return templates.TemplateResponse(
+        "pages/login.html",
+        {
+            "request": request,
+            "title": "Connexion - PAYsible",
+            "user_email": user.email,
+            "error": None,
+            "info": "Compte créé avec succès. Vous pouvez maintenant vous connecter.",
+        },
+    )
 
 
 @router.get("/logout")
@@ -300,3 +387,187 @@ async def settings_page(request: Request):
             "user_email": user_email,
         },
     )
+
+@router.get("/virement", response_class=HTMLResponse)
+async def virement_page(request: Request, db: Session = Depends(get_db)):
+    """
+    Affiche la page de virement avec les comptes de l'utilisateur.
+    """
+    user_email = get_user_email_from_session(request)
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Récupérer l'utilisateur et ses comptes
+    user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    if not user:
+        return RedirectResponse(url="/logout", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Préparer les données des comptes avec leurs soldes
+    accounts_data = []
+    for acc in user.accounts:
+        balance = get_account_balance(db, acc.id)
+        accounts_data.append({
+            "id": acc.id,
+            "type": f"Compte {acc.type}",
+            "iban": acc.iban,
+            "balance": f"{balance:,.2f}"
+        })
+
+    return templates.TemplateResponse(
+        "pages/virement.html",
+        {
+            "request": request,
+            "user_email": user_email,
+            "accounts": accounts_data,
+            "error": None,
+            "success": None
+        }
+    )
+
+@router.post("/virement/interne", response_class=HTMLResponse)
+async def virement_interne_submit(
+    request: Request,
+    db: Session = Depends(get_db),
+    compte_debit: int = Form(...),
+    compte_credit: int = Form(...),
+    montant: float = Form(...),
+    description: str = Form("")
+):
+    """
+    Traite un virement interne entre deux comptes de l'utilisateur.
+    Crée une transaction avec deux entrées (débit et crédit).
+    """
+    user_email = get_user_email_from_session(request)
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    if not user:
+        return RedirectResponse(url="/logout", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Validation : les deux comptes doivent être différents
+    if compte_debit == compte_credit:
+        accounts_data = []
+        for acc in user.accounts:
+            balance = get_account_balance(db, acc.id)
+            accounts_data.append({
+                "id": acc.id,
+                "type": f"Compte {acc.type}",
+                "iban": acc.iban,
+                "balance": f"{balance:,.2f}"
+            })
+        
+        return templates.TemplateResponse(
+            "pages/virement.html",
+            {
+                "request": request,
+                "user_email": user_email,
+                "accounts": accounts_data,
+                "error": "Vous ne pouvez pas effectuer un virement vers le même compte.",
+                "success": None
+            }
+        )
+
+    # Vérifier que les comptes appartiennent à l'utilisateur
+    compte_debit_obj = db.query(AccountDB).filter(
+        AccountDB.id == compte_debit,
+        AccountDB.user_id == user.id
+    ).first()
+    
+    compte_credit_obj = db.query(AccountDB).filter(
+        AccountDB.id == compte_credit,
+        AccountDB.user_id == user.id
+    ).first()
+
+    if not compte_debit_obj or not compte_credit_obj:
+        return RedirectResponse(url="/virement", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Vérifier le solde suffisant
+    solde_debit = get_account_balance(db, compte_debit)
+    if solde_debit < montant:
+        accounts_data = []
+        for acc in user.accounts:
+            balance = get_account_balance(db, acc.id)
+            accounts_data.append({
+                "id": acc.id,
+                "type": f"Compte {acc.type}",
+                "iban": acc.iban,
+                "balance": f"{balance:,.2f}"
+            })
+        
+        return templates.TemplateResponse(
+            "pages/virement.html",
+            {
+                "request": request,
+                "user_email": user_email,
+                "accounts": accounts_data,
+                "error": f"Solde insuffisant. Solde disponible: {solde_debit:,.2f} €",
+                "success": None
+            }
+        )
+
+    # Créer la transaction
+    transaction_desc = description if description else f"Virement interne"
+    new_transaction = TransactionDB(
+        type="Virement interne",
+        amount=montant,
+        date=datetime.now(),
+        description=transaction_desc
+    )
+    db.add(new_transaction)
+    db.flush()  # Pour obtenir l'ID de la transaction
+
+    # Créer l'entrée de débit
+    entry_debit = TransactionEntryDB(
+        amount=-montant,
+        type="DEBIT",
+        description=transaction_desc,
+        account_id=compte_debit,
+        transaction_id=new_transaction.id
+    )
+    db.add(entry_debit)
+
+    # Créer l'entrée de crédit
+    entry_credit = TransactionEntryDB(
+        amount=montant,
+        type="CREDIT",
+        description=transaction_desc,
+        account_id=compte_credit,
+        transaction_id=new_transaction.id
+    )
+    db.add(entry_credit)
+
+    # Valider la transaction
+    db.commit()
+
+    # Préparer les données pour réafficher la page avec succès
+    accounts_data = []
+    for acc in user.accounts:
+        balance = get_account_balance(db, acc.id)
+        accounts_data.append({
+            "id": acc.id,
+            "type": f"Compte {acc.type}",
+            "iban": acc.iban,
+            "balance": f"{balance:,.2f}"
+        })
+
+    return templates.TemplateResponse(
+        "pages/virement.html",
+        {
+            "request": request,
+            "user_email": user_email,
+            "accounts": accounts_data,
+            "error": None,
+            "success": f"Virement de {montant:,.2f} € effectué avec succès !"
+        }
+    )
+
+@router.get("/test-500")
+def test_error_500():
+    """
+    Cette route provoque volontairement une erreur pour tester le template 500.html.
+    """
+    # Une division par zéro lève une exception "ZeroDivisionError",
+    # ce qui est considéré comme une erreur serveur (code 500).
+    result = 1 / 0
+    return result

@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}Nouveau Virement - PAYsible{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- En-tête -->
+            <div class="text-center mb-4">
+                <h1 class="section-title">
+                    <i class="bi bi-arrow-left-right"></i> Nouveau Virement
+                </h1>
+                <p class="text-muted">Effectuez un virement entre vos comptes ou vers un bénéficiaire</p>
+            </div>
+
+            <!-- Choix du type de virement -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm virement-type-card" id="card-interne">
+                        <div class="card-body text-center p-4">
+                            <div class="mb-3">
+                                <i class="bi bi-bank2 text-primary-paysible" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title fw-bold">Virement Interne</h5>
+                            <p class="card-text text-muted">Entre vos comptes PAYsible</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm virement-type-card" id="card-beneficiaire">
+                        <div class="card-body text-center p-4">
+                            <div class="mb-3">
+                                <i class="bi bi-people text-secondary-paysible" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title fw-bold">Vers un Bénéficiaire</h5>
+                            <p class="card-text text-muted">Vers un contact enregistré</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire de virement interne -->
+            <div id="form-interne" class="card border-0 shadow-sm" style="display: none;">
+                <div class="card-header bg-gradient-paysible text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bank2"></i> Virement Interne
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if error %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                        </div>
+                    {% endif %}
+
+                    {% if success %}
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle"></i> {{ success }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="/virement/interne">
+                        <div class="mb-3">
+                            <label for="compte_debit" class="form-label fw-bold">
+                                <i class="bi bi-wallet"></i> Compte à débiter
+                            </label>
+                            <select class="form-select" id="compte_debit" name="compte_debit" required>
+                                <option value="">Sélectionnez un compte</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">
+                                    {{ account.type }} ({{ account.iban }}) - Solde: {{ account.balance }} €
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="compte_credit" class="form-label fw-bold">
+                                <i class="bi bi-wallet2"></i> Compte à créditer
+                            </label>
+                            <select class="form-select" id="compte_credit" name="compte_credit" required>
+                                <option value="">Sélectionnez un compte</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">
+                                    {{ account.type }} ({{ account.iban }}) - Solde: {{ account.balance }} €
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="montant" class="form-label fw-bold">
+                                <i class="bi bi-cash-stack"></i> Montant (€)
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                id="montant" 
+                                name="montant" 
+                                step="0.01" 
+                                min="0.01" 
+                                required
+                                placeholder="0.00"
+                            >
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">
+                                <i class="bi bi-chat-left-text"></i> Description (optionnel)
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="description" 
+                                name="description" 
+                                rows="3"
+                                placeholder="Ex: Épargne mensuelle, remboursement..."
+                            ></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary-paysible btn-lg">
+                                <i class="bi bi-check-circle"></i> Effectuer le virement
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                <i class="bi bi-arrow-left"></i> Retour au choix
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Redirection vers bénéficiaires (JavaScript) -->
+            <div class="text-center mt-4">
+                <a href="/" class="text-muted">
+                    <i class="bi bi-house"></i> Retour à l'accueil
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .virement-type-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent !important;
+    }
+
+    .virement-type-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+        border-color: var(--secondary-color) !important;
+    }
+
+    .virement-type-card.selected {
+        border-color: var(--primary-color) !important;
+        background-color: rgba(29, 61, 106, 0.05);
+    }
+
+    .form-select:focus,
+    .form-control:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 0.25rem rgba(56, 165, 228, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestion du choix du type de virement
+    document.getElementById('card-interne').addEventListener('click', function() {
+        document.getElementById('form-interne').style.display = 'block';
+        document.querySelectorAll('.virement-type-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        this.classList.add('selected');
+        
+        // Scroll vers le formulaire
+        document.getElementById('form-interne').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.getElementById('card-beneficiaire').addEventListener('click', function() {
+        // Redirection vers la page bénéficiaires
+        window.location.href = '/beneficiaries';
+    });
+
+    function resetForm() {
+        document.getElementById('form-interne').style.display = 'none';
+        document.querySelectorAll('.virement-type-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Scroll vers le haut
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Validation : empêcher de sélectionner le même compte
+    document.getElementById('compte_debit')?.addEventListener('change', function() {
+        const creditSelect = document.getElementById('compte_credit');
+        if (creditSelect.value === this.value && this.value !== '') {
+            alert('Vous ne pouvez pas sélectionner le même compte pour le débit et le crédit.');
+            creditSelect.value = '';
+        }
+    });
+
+    document.getElementById('compte_credit')?.addEventListener('change', function() {
+        const debitSelect = document.getElementById('compte_debit');
+        if (debitSelect.value === this.value && this.value !== '') {
+            alert('Vous ne pouvez pas sélectionner le même compte pour le débit et le crédit.');
+            this.value = '';
+        }
+    });
+</script>
+{% endblock %}
