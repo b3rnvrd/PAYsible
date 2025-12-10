@@ -127,9 +127,6 @@
                 </div>
             </div>
 
-<<<<<<< Updated upstream
-            <!-- Redirection vers bénéficiaires (JavaScript) -->
-=======
             <div id="form-beneficiaire" class="card border-0 shadow-sm" style="display: none;">
                 <div class="card-header bg-gradient-paysible text-white py-3">
                     <h5 class="mb-0">
@@ -228,7 +225,6 @@
                 </div>
             </div>
 
->>>>>>> Stashed changes
             <div class="text-center mt-4">
                 <a href="/" class="text-muted">
                     <i class="bi bi-house"></i> Retour à l'accueil
@@ -284,10 +280,6 @@
     });
 
     document.getElementById('card-beneficiaire').addEventListener('click', function() {
-<<<<<<< Updated upstream
-        // Redirection vers la page bénéficiaires
-        window.location.href = '/beneficiaries';
-=======
         // CORRECTION : Masque l'autre formulaire
         document.getElementById('form-interne').style.display = 'none';
 
@@ -299,16 +291,12 @@
         
         // Scroll vers le formulaire
         document.getElementById('form-beneficiaire').scrollIntoView({ behavior: 'smooth', block: 'start' });
->>>>>>> Stashed changes
     });
 
     function resetForm() {
         document.getElementById('form-interne').style.display = 'none';
-<<<<<<< Updated upstream
-=======
         // CORRECTION : Masque le formulaire Bénéficiaire aussi
         document.getElementById('form-beneficiaire').style.display = 'none';
->>>>>>> Stashed changes
         document.querySelectorAll('.virement-type-card').forEach(card => {
             card.classList.remove('selected');
         });
