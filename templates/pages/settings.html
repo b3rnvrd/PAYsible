@@ -171,11 +171,6 @@
             <div class="modal-body">
                 <form id="add-account-form">
                     <div class="mb-3">
-                        <label for="account_label" class="form-label">Nom du compte</label>
-                        <input type="text" class="form-control" id="account_label" name="label" required placeholder="Ex: Compte Principal">
-                    </div>
-                    
-                    <div class="mb-3">
                         <label for="account_type" class="form-label">Type de compte</label>
                         <select class="form-select" id="account_type" name="type" required>
                             <option value="">Sélectionnez un type</option>
@@ -199,34 +194,6 @@
     </div>
 </div>
 
-<!-- Modal : Modifier un compte -->
-<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-gradient-paysible text-white">
-                <h5 class="modal-title" id="editAccountModalLabel">
-                    <i class="bi bi-pencil"></i> Modifier le compte
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="edit-account-form">
-                    <input type="hidden" id="edit_account_id" name="account_id">
-                    <div class="mb-3">
-                        <label for="edit_account_label" class="form-label">Nom du compte</label>
-                        <input type="text" class="form-control" id="edit_account_label" name="label" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary-paysible" id="btn-update-account">
-                    <i class="bi bi-check-circle"></i> Enregistrer
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 {% endblock %}
 
