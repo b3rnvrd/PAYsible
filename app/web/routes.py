@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from datetime import datetime
 import json
+import re
 
 from app.core.database import get_db
 from app.core.dependencies import get_user_email_from_session
@@ -262,6 +263,21 @@ async def register_submit(
         db: Session = Depends(get_db),
 ):
     email = (email or "").strip().lower()
+    phone_number = (phone_number or "").strip()
+
+    # Validation du numéro au format international E.164
+    if phone_number:
+        pattern = r"^\+[1-9]\d{7,14}$"
+        if not re.match(pattern, phone_number):
+            return templates.TemplateResponse(
+                "pages/register.html",
+                {
+                    "request": request,
+                    "title": "Créer un compte - PAYsible",
+                    "error": "Le numéro de téléphone doit être au format international, ex : +33612345678.",
+                },
+            )
+
 
     if not email or len(email) > 255:
         return templates.TemplateResponse(
@@ -287,10 +303,11 @@ async def register_submit(
     user = UserDB(
         name=(name or "").strip() or None,
         last_name=(last_name or "").strip() or None,
-        phone_number=(phone_number or "").strip() or None,
+        phone_number=phone_number or None,
         address=(address or "").strip() or None,
         email=email,
     )
+
     db.add(user)
     db.commit()
     db.refresh(user)

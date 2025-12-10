@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel,field_validator
 from typing import Optional
+import re                                         # ⬅ ajoute re
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user_from_session
@@ -30,6 +31,23 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
 
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
+        """
+        Vérifie que le numéro est au format international E.164 :
+        - commence par +
+        - ensuite 8 à 15 chiffres
+        Ex: +33612345678
+        """
+        if v is None or v == "":
+            return v  # on autorise champ vide
+
+        v = v.strip()
+        pattern = r"^\+[1-9]\d{7,14}$"
+        if not re.match(pattern, v):
+            raise ValueError("Le numéro doit être au format international, ex : +33612345678.")
+        return v
 
 @router.get("/me/", response_model=UserResponse)
 async def get_current_user(request: Request, db: Session = Depends(get_db)):

@@ -53,12 +53,15 @@
 
                 <div class="mb-3">
                     <label for="phone_number" class="form-label">Téléphone</label>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="phone_number"
-                        name="phone_number"
-                    >
+                        <input
+                            type="tel"
+                            class="form-control"
+                            id="phone_number"
+                            name="phone_number"
+                            placeholder="+33612345678"
+                            pattern="^\+[1-9][0-9]{7,14}$"
+                            title="Numéro au format international, ex : +33612345678"
+                        />
                 </div>
 
                 <div class="mb-3">

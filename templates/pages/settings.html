@@ -61,9 +61,19 @@
                             
                             <div class="mb-3">
                                 <label for="phone" class="form-label">Téléphone</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+33 6 00 00 00 00">
-                            </div>
-                            
+                                <input
+                                    type="tel"
+                                    class="form-control"
+                                    id="phone"
+                                    name="phone"
+                                    placeholder="+33612345678"
+                                    pattern="^\+[1-9][0-9]{7,14}$"
+                                    title="Numéro au format international, ex : +33612345678"
+                                >
+                                <small class="form-text text-muted">
+                                    Format international uniquement (ex : +33612345678).
+                                </small>
+                            </div>       
                             <div class="mb-3">
                                 <label for="address" class="form-label">Adresse</label>
                                 <textarea class="form-control" id="address" name="address" rows="3" placeholder="Votre adresse complète"></textarea>
