@@ -6,7 +6,11 @@
 <link rel="stylesheet" href="{{ request.url_for('static', path='css/settings.css') }}">
 {% endblock %}
 
-{% block content %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ request.url_for('static', path='js/settings.js') }}"></script>
+{% endblock %}
 <div class="container py-5">
     <div class="row">
         <!-- Navigation latérale -->
