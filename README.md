@@ -6,7 +6,7 @@
 
 ---
 
-## 📑 Table des Matières
+## Table des Matières
 
 1. [Contexte et Objectifs](#-contexte-et-objectifs)
 2. [Architecture Technique](#-architecture-technique)
@@ -15,12 +15,13 @@
 5. [Installation et Démarrage](#-installation-et-démarrage)
 6. [Structure du Projet](#-structure-du-projet)
 7. [Documentation API](#-documentation-api)
-8. [Charte Graphique](#-charte-graphique)
-9. [Auteurs](#-auteurs)
+8. [Répartition des tâches](#-Répartition-des-tâches)
+9. [Roadmap Technique](#-Roadmap-Technique)
+10. [Auteurs](#-auteurs)
 
 ---
 
-## 🎯 Contexte et Objectifs
+## Contexte et Objectifs
 
 Ce projet (Groupe 2) vise à développer un monolithe modulaire asynchrone sous **Python (FastAPI)**.
 L'objectif final est de rendre l'application portable via **Docker** et orchestrable via **Kubernetes**.
@@ -33,7 +34,7 @@ L'objectif final est de rendre l'application portable via **Docker** et orchestr
 
 ---
 
-## 🛠 Architecture Technique
+## Architecture Technique
 
 L'application suit une architecture MVC modulaire séparant les routes Web (rendu HTML) des endpoints API (Données JSON).
 
@@ -49,53 +50,57 @@ L'application suit une architecture MVC modulaire séparant les routes Web (rend
 
 ---
 
-## 🚀 Fonctionnalités
+## Fonctionnalités
 
-### 🔐 Authentification & Sécurité
+### Authentification & Sécurité
 * **Login simplifié :** Vérification de l'existence de l'email en base de données.
 * **Sessions :** Gestion via `SessionMiddleware` (cookies sécurisés).
 * **Protection :** Redirection automatique vers `/login` si accès non autorisé.
 
-### 🏦 Gestion des Comptes
+### Gestion des Comptes
 * **Visualisation :** Tableau de bord avec solde total cumulé et détail par compte.
 * **CRUD Comptes :** Création (Courant/Épargne), Modification (Renommer), Clôture (Suppression).
 * **IBAN :** Génération automatique d'IBAN fictifs (FR76...).
 
-### 💸 Transactions & Virements
+### Transactions & Virements
 * **Historique :** Liste des dernières transactions avec statuts (Complété/En attente).
 * **Bénéficiaires :** Ajout, modification et suppression de bénéficiaires pour les virements.
 * **Calcul de Solde :** Solde calculé dynamiquement (voir section Logique Comptable).
 
-### ⚙️ Paramètres
+### Paramètres
 * **Profil Utilisateur :** Modification des informations personnelles (Nom, Tél, Adresse).
 * **Préférences :** Gestion des notifications et de la langue (via `localStorage`).
 
-### 🎨 Pages d'Erreur
+### Pages d'Erreur
 * **404 :** Page personnalisée "Astronaute perdu".
 * **500 :** Page interactive "Terminal/Stack Trace" avec animations CSS avancées.
 
 ---
 
-## 🧮 Logique Comptable (Spécificité)
+## Logique Comptable (Spécificité)
 
 Pour garantir une intégrité comptable absolue, le projet utilise une séparation stricte entre l'événement et l'impact financier.
 
 ![Modèle Entité Relation](static/img/ModèleER.png)
 
 1.  **Transaction (L'Événement) :** Sert de conteneur (Date, Description, Type).
+**Remarque:** Le solde des comptes n'est pas persisté mais calculé dynamiquement par agrégation des transactions (Source de Vérité Unique). Ce choix garantit une intégrité comptable absolue et élimine tout risque de désynchronisation des données. Nous sommes conscients que cette approche impacte la scalabilité, augmentant la latence de calcul proportionnellement au volume de l'historique.
+
+
 2.  **TransactionEntry (L'Écriture) :** Représente le mouvement réel d'argent (+/-) sur un compte spécifique.
+
 
 > **Note importante :** Le solde des comptes n'est **jamais** stocké en dur dans la base de données. Il est **calculé dynamiquement** par agrégation (somme) de toutes les `TransactionEntries` liées à un compte. C'est la "Source de Vérité Unique".
 
 ---
 
-## ⚡ Installation et Démarrage
+## Installation et Démarrage
 
 Suivez ces étapes pour lancer le projet localement.
 
 ### 1. Cloner le projet
 ```bash
-git clone [https://github.com/b3rnvrd/PAYsible.git](https://github.com/b3rnvrd/PAYsible.git)
+git clone https://github.com/b3rnvrd/PAYsible.git
 cd PAYsible
 ````
 
@@ -127,6 +132,14 @@ python seed.py
 
 *Vous devriez voir : "✅ 3 Utilisateurs créés", "✅ 4 Comptes bancaires créés", "🚀 TOUT EST PRÊT \!"*
 
+vous pourrez vous connecter à l'application avec les comptes de démonstration suivants
+
+| Utilisateur | Email de connexion | Description |
+| :--- | :--- | :--- |
+| **Elon Musk** | `client@paysible.com` | **Compte Principal** (Nombreuses transactions & comptes) |
+| **Jeff Bezos** | `jeff@amazon.com` | Utilisateur secondaire |
+| **Bernard Arnault** | `bernard@lvmh.com` | Utilisateur secondaire |
+
 ### 5\. Lancer le serveur
 
 ```bash
@@ -140,7 +153,7 @@ uvicorn app.main:app --reload
 
 -----
 
-## 📂 Structure du Projet
+### 7\. Structure du Projet
 
 ```
 PAYsible/
@@ -169,11 +182,11 @@ PAYsible/
 
 -----
 
-## 📖 Documentation API
+## Documentation API
 
 Une documentation interactive (Swagger UI) est générée automatiquement par FastAPI.
 
-  * **Swagger UI :** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/documentation)
+  * **Swagger UI :** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ### Principaux Endpoints
 
@@ -187,21 +200,65 @@ Une documentation interactive (Swagger UI) est générée automatiquement par Fa
 
 -----
 
-## 🎨 Charte Graphique
 
-L'interface utilise une palette de couleurs spécifique définie dans les variables CSS :
+### 8\. Répartition des tâches
+Nous avons opté pour une approche transversale où chaque membre de l'équipe intervient sur l'ensemble de la stack technique (Front-end et Back-end).
+Ce choix stratégique vise deux objectifs :
+Assurer une montée en compétence collective sur le framework FastAPI.
+Permettre à chacun de maîtriser la chaîne complète de développement, de la gestion des données à l'interface utilisateur.
 
-| Couleur | Code Hex | Usage |
-| :--- | :--- | :--- |
-| **Bleu Foncé** | `#1D3D6A` | Textes principaux, Logo, Terminaux |
-| **Turquoise Clair** | `#38A5E4` | Accents vifs, Boutons success, "Sible" |
-| **Bleu Moyen** | `#2474C6` | Dégradés, Cartes, Boutons primaires |
-| **Or / Jaune** | `#F4C448` | Badges "Principal", Alertes, Pièces |
-| **Blanc** | `#FFFFFF` | Textes sur fond sombre, Éclairage |
 
------
+### 9\. Roadmap Technique
+**Phase 1 : Développement (Séances 1 à 3)**
+Objectif : construire les fondations de l’application web Django et API
 
-## 👥 Auteurs
+**Séance 1: Initialisation du projet**
+* Création du projet Django + structure de l’application ( ex: accounts, transactions, dashboard )
+* Mise en place du modèle de données
+* Configuration de la base MySQL locale et tests CRUD de base via l’interface admin Django.
+
+**Séance 2: API & pages principales**
+* Développement de l’API REST (Django REST Framework).
+* Création des endpoints pour comptes et transactions.
+* Début du front-end (page d’accueil + authentification simplifiée).
+* Vérification du lien entre API ↔ Front-end.
+
+
+**Séance 3: Dashboard & finalisation du front-end**
+* Ajout du dashboard de dépenses
+* Pages : solde, bénéficiaires, paramètres, erreurs 404/500.
+* Tests fonctionnels : création compte, retrait, transfert.
+* Validation du prototype complet avant conteneurisation.
+
+**Phase 2 : Conteneurisation (Séances 4 à 6)**
+Objectif : rendre l’application portable et exécutable dans des conteneurs Docker.
+
+**Séance 4 & 5: Docker et BDD**
+* Création du Dockerfile pour le back-end Django.
+* Création du docker-compose.yml (services : web, db).
+* Tests du build et du lancement de l’application.
+* Ajout de volume pour la base de données
+
+**Séance 6: Tests d’intégration**
+*Lancement complet du projet en environnement conteneurisé.
+* Tests CRUD
+* Documentation technique Docker (README).
+
+# **Phase 3 : Architecture distribuée et Kubernetes (Séances 7 à 9)**
+Objectif : déployer et orchestrer l’application dans un environnement distribué. (1 pod?)
+
+**Séance 7 & 8: Kubernetes**
+* Découverte du pod, services et déploiements.
+* Création des manifestes (deployment.yaml, service.yaml).
+* Premier déploiement local (avec Minikube?)
+* Monitoring basique avec kubectl.
+
+**Séance 9: Finalisation architecture distribuée**
+* Intégration des variables d’environnement et secrets.
+* Documentation de l’architecture (schéma global).
+* Préparation du dépôt Git final.
+
+### 10\. Auteurs
 
 **Groupe 2**
 

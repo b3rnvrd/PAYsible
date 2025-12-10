@@ -52,60 +52,71 @@ print(f"✅ 3 Utilisateurs créés (Testez avec {created_users[0].email})")
 
 # --- 3. CRÉATION DES COMPTES ---
 # NOTE: IBAN Français = 'FR' + 25 chiffres = 27 caractères au total
-# On utilise ici des IBANs fictifs mais valides en longueur pour passer le validateur.
 
+# Comptes pour Elon
 acc_courant = AccountDB(
     type="Courant", 
-    iban="FR7630003000300030003000301", # 27 chars
+    iban="FR7630003000300030003000301",
     user_id=created_users[0].id
 )
 acc_epargne = AccountDB(
     type="Epargne", 
-    iban="FR7630003000300030003000302", # 27 chars
+    iban="FR7630003000300030003000302",
     user_id=created_users[0].id
 )
 acc_pro = AccountDB(
     type="Professionnel", 
-    iban="FR7630003000300030003000303", # 27 chars
+    iban="FR7630003000300030003000303",
     user_id=created_users[0].id
 )
 
-# Un compte pour Jeff
+# Compte pour Jeff
 acc_jeff = AccountDB(
     type="Courant", 
-    iban="FR7699999999999999999999999", # 27 chars
+    iban="FR7699999999999999999999999",
     user_id=created_users[1].id
 )
 
-db.add_all([acc_courant, acc_epargne, acc_pro, acc_jeff])
+# Compte pour Bernard (NOUVEAU pour permettre les tests complets)
+acc_bernard = AccountDB(
+    type="Courant", 
+    iban="FR7677777777777777777777777",
+    user_id=created_users[2].id
+)
+
+db.add_all([acc_courant, acc_epargne, acc_pro, acc_jeff, acc_bernard])
 db.commit()
-print("✅ 4 Comptes bancaires créés")
+print("✅ 5 Comptes bancaires créés")
 
 # --- 3B. SOLDE DE DÉPART POSITIF (GARANTIE) ---
-# Ajout d'une transaction initiale pour garantir un solde positif avant les 40 transactions aléatoires.
 INITIAL_BALANCE = 5000.00
-date_init = datetime.now() - timedelta(days=181) # Un jour avant la fenêtre de 180 jours
+date_init = datetime.now() - timedelta(days=181)
 
-txn_init = TransactionDB(
-    type="Dépôt Initial", amount=INITIAL_BALANCE, 
-    description="Dépôt de Solde Initial de Démo", date=date_init
-)
-db.add(txn_init)
+# On met du solde sur le compte principal de chaque utilisateur pour faciliter les tests
+comptes_a_crediter = [acc_courant, acc_jeff, acc_bernard]
+
+for compte in comptes_a_crediter:
+    txn_init = TransactionDB(
+        type="Dépôt Initial", amount=INITIAL_BALANCE, 
+        description="Dépôt de Solde Initial", date=date_init
+    )
+    db.add(txn_init)
+    db.commit()
+    db.refresh(txn_init)
+
+    entry_init = TransactionEntryDB(
+        amount=INITIAL_BALANCE, type="CREDIT", 
+        description="Solde de départ",
+        account_id=compte.id,
+        transaction_id=txn_init.id
+    )
+    db.add(entry_init)
+
 db.commit()
-db.refresh(txn_init)
-
-entry_init = TransactionEntryDB(
-    amount=INITIAL_BALANCE, type="CREDIT", 
-    description="Solde de départ",
-    account_id=acc_courant.id,
-    transaction_id=txn_init.id
-)
-db.add(entry_init)
-db.commit()
-print(f"💰 Solde initial de +{INITIAL_BALANCE:.2f}€ ajouté au compte courant.")
+print(f"💰 Solde initial de +{INITIAL_BALANCE:.2f}€ ajouté aux comptes principaux.")
 
 
-# --- 4. GÉNÉRATION MASSIVE DE TRANSACTIONS ---
+# --- 4. GÉNÉRATION MASSIVE DE TRANSACTIONS (Uniquement pour Elon) ---
 descriptions_depenses = [
     ("Supermarché", -50, -200), ("Restaurant", -15, -120),
     ("Uber", -10, -40), ("Abonnement Netflix", -17.99, -17.99),
@@ -121,9 +132,8 @@ descriptions_revenus = [
     ("Dividendes", 100, 500)
 ]
 
-# On génère 40 transactions aléatoires pour le compte courant d'Elon
 for _ in range(40):
-    is_expense = random.random() > 0.2  # 80% de chances que ce soit une dépense
+    is_expense = random.random() > 0.2
     
     if is_expense:
         desc, min_amt, max_amt = random.choice(descriptions_depenses)
@@ -135,13 +145,11 @@ for _ in range(40):
     amount = round(random.uniform(min_amt, max_amt), 2)
     date_t = random_date()
 
-    # Transaction globale
     txn = TransactionDB(type=type_t, amount=abs(amount), description=desc, date=date_t)
     db.add(txn)
     db.commit()
     db.refresh(txn)
 
-    # Entrée sur le compte
     entry = TransactionEntryDB(
         amount=amount,
         type="DEBIT" if amount < 0 else "CREDIT",
@@ -151,41 +159,72 @@ for _ in range(40):
     )
     db.add(entry)
 
-# Quelques transactions pour le compte Épargne (Virements mensuels)
+# Virements épargne Elon
 for i in range(6):
     date_t = datetime.now() - timedelta(days=i*30)
-    
-    # 1. Débit du compte courant
     txn_vir = TransactionDB(type="Virement Interne", amount=500.0, description="Epargne Mensuelle", date=date_t)
     db.add(txn_vir)
     db.commit()
     db.refresh(txn_vir)
 
-    entry_out = TransactionEntryDB(
+    db.add(TransactionEntryDB(
         amount=-500.0, type="DEBIT", description="Vers Livret A",
         account_id=acc_courant.id, transaction_id=txn_vir.id
-    )
-    # 2. Crédit du compte épargne
-    entry_in = TransactionEntryDB(
+    ))
+    db.add(TransactionEntryDB(
         amount=500.0, type="CREDIT", description="Depuis Compte Courant",
         account_id=acc_epargne.id, transaction_id=txn_vir.id
-    )
-    db.add(entry_out)
-    db.add(entry_in)
+    ))
 
-db.commit() # Commit final pour les 40 transactions et les virements d'épargne
-print("✅ 50+ Transactions générées (avec Solde Initial garantissant le positif)")
+db.commit()
+print("✅ Transactions de démo générées")
 
-# --- 5. AJOUT DE BÉNÉFICIAIRES ---
-# Ces IBANs doivent aussi respecter le format FR + 25 chiffres
-benefs = [
+# --- 5. AJOUT DE BÉNÉFICIAIRES MANUELS ---
+benefs_manual = [
     BeneficiaryDB(name="Maman Maye", iban="FR7600010001000100010001001", account_id=acc_courant.id),
     BeneficiaryDB(name="Propriétaire", iban="FR7600020002000200020002002", account_id=acc_courant.id),
     BeneficiaryDB(name="Frère Kimbal", iban="FR7600030003000300030003003", account_id=acc_courant.id),
 ]
-db.add_all(benefs)
+db.add_all(benefs_manual)
 db.commit()
-print("✅ Bénéficiaires ajoutés")
+
+# --- 6. AJOUT AUTOMATIQUE DE BÉNÉFICIAIRES CROISÉS (NOUVEAU) ---
+# Chaque utilisateur aura tous les autres utilisateurs comme bénéficiaires
+print("🔄 Génération des bénéficiaires croisés...")
+
+# On rafraîchit les utilisateurs pour être sûr d'avoir leurs comptes liés
+all_users = db.query(UserDB).all()
+
+for user in all_users:
+    # On vérifie que l'utilisateur a au moins un compte pour y attacher des bénéficiaires
+    if not user.accounts:
+        continue
+        
+    mon_compte_principal = user.accounts[0] # On attache au premier compte trouvé
+    
+    for other_user in all_users:
+        # On ne s'ajoute pas soi-même
+        if user.id == other_user.id:
+            continue
+            
+        # On vérifie que l'autre utilisateur a un compte (pour récupérer son IBAN)
+        if other_user.accounts:
+            other_account = other_user.accounts[0]
+            
+            # Création du bénéficiaire
+            # Ex: Pour Elon, on crée "Jeff Bezos" avec l'IBAN de Jeff
+            benef = BeneficiaryDB(
+                name=f"{other_user.name} {other_user.last_name}",
+                iban=other_account.iban,
+                account_id=mon_compte_principal.id
+            )
+            db.add(benef)
+
+db.commit()
+print("✅ Bénéficiaires croisés ajoutés pour tous les clients")
 
 db.close()
-print("\n🚀 TOUT EST PRÊT ! Lancez le serveur et connectez-vous avec : client@paysible.com")
+print("\n🚀 TOUT EST PRÊT ! Lancez le serveur et connectez-vous avec :")
+print(f"👉 {users_data[0]['email']} (Elon)")
+print(f"👉 {users_data[1]['email']} (Jeff)")
+print(f"👉 {users_data[2]['email']} (Bernard)")
