@@ -14,6 +14,7 @@ from app.core.dependencies import get_user_email_from_session
 from app.models.user import UserDB
 from app.models.account import AccountDB
 from app.models.transaction import TransactionDB, TransactionEntryDB
+from app.models.beneficiary import BeneficiaryDB
 
 router = APIRouter(tags=["Web Pages"])
 templates = Jinja2Templates(directory="templates")
@@ -408,12 +409,28 @@ async def virement_page(request: Request, db: Session = Depends(get_db)):
             "balance": f"{balance:,.2f}"
         })
 
+    # Récupérer tous les bénéficiaires de tous les comptes de l'utilisateur
+    user_account_ids = [acc.id for acc in user.accounts]
+    beneficiaries = db.query(BeneficiaryDB).filter(
+        BeneficiaryDB.account_id.in_(user_account_ids)
+    ).all()
+    
+    beneficiaries_data = []
+    for benef in beneficiaries:
+        beneficiaries_data.append({
+            "id": benef.id,
+            "name": benef.name,
+            "iban": benef.iban,
+            "account_id": benef.account_id
+        })
+
     return templates.TemplateResponse(
         "pages/virement.html",
         {
             "request": request,
             "user_email": user_email,
             "accounts": accounts_data,
+            "beneficiaries": beneficiaries_data,
             "error": None,
             "success": None
         }
@@ -545,6 +562,163 @@ async def virement_interne_submit(
             "accounts": accounts_data,
             "error": None,
             "success": f"Virement de {montant:,.2f} € effectué avec succès !"
+        }
+    )
+
+
+@router.post("/virement/beneficiaire", response_class=HTMLResponse)
+async def virement_beneficiaire_submit(
+    request: Request,
+    compte_debit: int = Form(...),
+    beneficiaire_id: int = Form(...),
+    montant: float = Form(...),
+    description: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    """Traite un virement vers un bénéficiaire externe."""
+    user_email = get_user_email_from_session(request)
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    if not user:
+        return RedirectResponse(url="/logout", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Récupérer les comptes et bénéficiaires pour le template
+    accounts_data = []
+    for acc in user.accounts:
+        balance = get_account_balance(db, acc.id)
+        accounts_data.append({
+            "id": acc.id,
+            "type": f"Compte {acc.type}",
+            "iban": acc.iban,
+            "balance": f"{balance:,.2f}"
+        })
+
+    user_account_ids = [acc.id for acc in user.accounts]
+    beneficiaries = db.query(BeneficiaryDB).filter(
+        BeneficiaryDB.account_id.in_(user_account_ids)
+    ).all()
+    
+    beneficiaries_data = []
+    for benef in beneficiaries:
+        beneficiaries_data.append({
+            "id": benef.id,
+            "name": benef.name,
+            "iban": benef.iban,
+            "account_id": benef.account_id
+        })
+
+    # Validation: vérifier que le compte appartient à l'utilisateur
+    compte_debit_obj = db.query(AccountDB).filter(
+        AccountDB.id == compte_debit,
+        AccountDB.user_id == user.id
+    ).first()
+
+    if not compte_debit_obj:
+        return templates.TemplateResponse(
+            "pages/virement.html",
+            {
+                "request": request,
+                "user_email": user_email,
+                "accounts": accounts_data,
+                "beneficiaries": beneficiaries_data,
+                "error": "Compte invalide.",
+                "success": None
+            }
+        )
+
+    # Validation: vérifier que le bénéficiaire existe et appartient à un compte de l'utilisateur
+    beneficiaire = db.query(BeneficiaryDB).filter(
+        BeneficiaryDB.id == beneficiaire_id,
+        BeneficiaryDB.account_id.in_(user_account_ids)
+    ).first()
+
+    if not beneficiaire:
+        return templates.TemplateResponse(
+            "pages/virement.html",
+            {
+                "request": request,
+                "user_email": user_email,
+                "accounts": accounts_data,
+                "beneficiaries": beneficiaries_data,
+                "error": "Bénéficiaire invalide.",
+                "success": None
+            }
+        )
+
+    # Validation: montant positif
+    if montant <= 0:
+        return templates.TemplateResponse(
+            "pages/virement.html",
+            {
+                "request": request,
+                "user_email": user_email,
+                "accounts": accounts_data,
+                "beneficiaries": beneficiaries_data,
+                "error": "Le montant doit être supérieur à 0.",
+                "success": None
+            }
+        )
+
+    # Validation: solde suffisant
+    solde_debit = get_account_balance(db, compte_debit)
+    if solde_debit < montant:
+        return templates.TemplateResponse(
+            "pages/virement.html",
+            {
+                "request": request,
+                "user_email": user_email,
+                "accounts": accounts_data,
+                "beneficiaries": beneficiaries_data,
+                "error": f"Solde insuffisant. Solde disponible: {solde_debit:,.2f} €",
+                "success": None
+            }
+        )
+
+    # Créer la transaction
+    transaction_desc = description if description else f"Virement vers {beneficiaire.name}"
+    new_transaction = TransactionDB(
+        type="Virement externe",
+        amount=montant,
+        date=datetime.now(),
+        description=transaction_desc
+    )
+    db.add(new_transaction)
+    db.flush()
+
+    # Créer l'entrée de débit
+    entry_debit = TransactionEntryDB(
+        amount=-montant,
+        type="Debit",
+        description=f"Virement vers {beneficiaire.name} - {beneficiaire.iban}",
+        account_id=compte_debit,
+        transaction_id=new_transaction.id
+    )
+    db.add(entry_debit)
+
+    db.commit()
+
+    # Recalculer les accounts_data avec les nouveaux soldes
+    accounts_data = []
+    for acc in user.accounts:
+        balance = get_account_balance(db, acc.id)
+        accounts_data.append({
+            "id": acc.id,
+            "type": f"Compte {acc.type}",
+            "iban": acc.iban,
+            "balance": f"{balance:,.2f}"
+        })
+
+    return templates.TemplateResponse(
+        "pages/virement.html",
+        {
+            "request": request,
+            "user_email": user_email,
+            "accounts": accounts_data,
+            "beneficiaries": beneficiaries_data,
+            "error": None,
+            "success": f"Virement de {montant:,.2f} € vers {beneficiaire.name} effectué avec succès !"
         }
     )
 

@@ -130,6 +130,105 @@
                 </div>
             </div>
 
+            <!-- Formulaire de virement vers bénéficiaire -->
+            <div id="form-beneficiaire" class="card border-0 shadow-sm" style="display: none;">
+                <div class="card-header bg-gradient-paysible text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people"></i> Virement vers Bénéficiaire
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if error %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                        </div>
+                    {% endif %}
+
+                    {% if success %}
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle"></i> {{ success }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="/virement/beneficiaire">
+                        <div class="mb-3">
+                            <label for="compte_debit_benef" class="form-label fw-bold">
+                                <i class="bi bi-wallet"></i> Compte à débiter
+                            </label>
+                            <select class="form-select" id="compte_debit_benef" name="compte_debit" required>
+                                <option value="">Sélectionnez un compte</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">
+                                    {{ account.type }} ({{ account.iban }}) - Solde: {{ account.balance }} €
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="beneficiaire_id" class="form-label fw-bold">
+                                <i class="bi bi-person-check"></i> Bénéficiaire
+                            </label>
+                            {% if beneficiaries and beneficiaries|length > 0 %}
+                                <select class="form-select" id="beneficiaire_id" name="beneficiaire_id" required>
+                                    <option value="">Sélectionnez un bénéficiaire</option>
+                                    {% for benef in beneficiaries %}
+                                    <option value="{{ benef.id }}">
+                                        {{ benef.name }} - {{ benef.iban }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <div class="alert alert-info mt-2">
+                                    <i class="bi bi-info-circle"></i> Vous n'avez pas encore de bénéficiaires enregistrés.
+                                    <a href="/beneficiaries" class="alert-link">Ajouter un bénéficiaire</a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="montant_benef" class="form-label fw-bold">
+                                <i class="bi bi-cash-stack"></i> Montant (€)
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                id="montant_benef" 
+                                name="montant" 
+                                step="0.01" 
+                                min="0.01" 
+                                required
+                                placeholder="0.00"
+                            >
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description_benef" class="form-label fw-bold">
+                                <i class="bi bi-chat-left-text"></i> Description (optionnel)
+                            </label>
+                            <textarea 
+                                class="form-control" 
+                                id="description_benef" 
+                                name="description" 
+                                rows="3"
+                                placeholder="Ex: Facture, remboursement..."
+                            ></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {% if beneficiaries and beneficiaries|length > 0 %}
+                            <button type="submit" class="btn btn-primary-paysible btn-lg">
+                                <i class="bi bi-check-circle"></i> Effectuer le virement
+                            </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                <i class="bi bi-arrow-left"></i> Retour au choix
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Redirection vers bénéficiaires (JavaScript) -->
             <div class="text-center mt-4">
                 <a href="/" class="text-muted">
@@ -183,12 +282,19 @@
     });
 
     document.getElementById('card-beneficiaire').addEventListener('click', function() {
-        // Redirection vers la page bénéficiaires
-        window.location.href = '/beneficiaries';
+        document.getElementById('form-beneficiaire').style.display = 'block';
+        document.querySelectorAll('.virement-type-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        this.classList.add('selected');
+        
+        // Scroll vers le formulaire
+        document.getElementById('form-beneficiaire').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
     function resetForm() {
         document.getElementById('form-interne').style.display = 'none';
+        document.getElementById('form-beneficiaire').style.display = 'none';
         document.querySelectorAll('.virement-type-card').forEach(card => {
             card.classList.remove('selected');
         });
