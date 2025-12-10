@@ -30,35 +30,40 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/">Accueil</a>
                     </li>
-                        {% if user_email %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/dashboard">Tableaux de bord</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('view_beneficiaries') }}">Bénéficiaires</a>                    
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/soldes">Soldes</a>
-                            </li>
-                            <li class="nav-item">
-                                <p class="nav-link">|</p>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/logout">Déconnexion</a>
-                            </li>
-                            <li class="nav-item">
-                                <p class="nav-link">|</p>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/settings">
-                                    <i class="bi bi-gear"></i>
-                                </a>
-                            </li>
-                        {% else %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/login">Connexion</a>
-                            </li>
-                        {% endif %}
+                    
+                    {% if user_email %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Tableaux de bord</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_beneficiaries') }}">Bénéficiaires</a>                    
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/soldes">Soldes</a>
+                        </li>
+
+                        <li class="nav-item d-none d-lg-flex align-self-center mx-2">
+                            <div class="vr text-white opacity-50" style="height: 20px;"></div>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Déconnexion</a>
+                        </li>
+
+                        <li class="nav-item d-none d-lg-flex align-self-center mx-2">
+                            <div class="vr text-white opacity-50" style="height: 20px;"></div>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/settings">
+                                <i class="bi bi-gear"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Connexion</a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
