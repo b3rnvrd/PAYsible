@@ -1,7 +1,16 @@
 # app/api/routers.py
 
 from fastapi import APIRouter
+from app.api.endpoints import beneficiaries, users, accounts
 
 router = APIRouter()
 
-# Les routeurs spécifiques (users.py, accounts.py) seront inclus ici plus tard.
+# Inclusion des routeurs spécifiques
+router.include_router(users.router)
+router.include_router(accounts.router)
+
+router.include_router(
+    beneficiaries.router, 
+    prefix="/beneficiaries", 
+    tags=["beneficiaries"]
+)
