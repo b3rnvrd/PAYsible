@@ -191,43 +191,126 @@ async def login_page(request: Request):
     return templates.TemplateResponse("pages/login.html", {"request": request, "user_email": get_user_email_from_session(request)})
 
 @router.post("/login", response_class=HTMLResponse)
-async def login_submit(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
-    """
-    Traite la soumission du formulaire de login.
-    - Si email vide → on réaffiche la page avec un message d'erreur.
-    - Sinon → on stocke l'email en session puis on redirige vers l'accueil.
-    """
-    email = email.strip()
-    if not email:
+async def login_submit(
+    request: Request,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    email = (email or "").strip().lower()
+    if not email or len(email) > 255:
         return templates.TemplateResponse(
             "pages/login.html",
             {
                 "request": request,
                 "title": "Connexion - PAYsible",
                 "user_email": "",
-                "error": "Veuillez saisir une adresse e-mail.",
+                "error": "Veuillez saisir une adresse e-mail valide.",
             },
         )
-    
+
+    # Protection SQL injection :
     user = db.query(UserDB).filter(UserDB.email == email).first()
-    
+
     if not user:
+        # Email pas trouvé → on reste sur la page login
         return templates.TemplateResponse(
             "pages/login.html",
             {
                 "request": request,
                 "title": "Connexion - PAYsible",
                 "user_email": email,
-                "error": "Aucun compte trouvé avec cet email. Essayez : client@paysible.com",
+                "error": (
+                    "Aucun compte trouvé avec cet e-mail. "
+                    "Veuillez créer un compte avec le bouton « Ajouter un compte »."
+                ),
             },
         )
 
     # Stockage de l'email dans la session (auth simplifiée)
     if hasattr(request, "session"):
-        request.session["user_email"] = email
+        request.session["user_email"] = user.email
 
     # Redirection vers la page d'accueil après connexion
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """
+    Affiche la page de création de compte (user).
+    """
+    return templates.TemplateResponse(
+        "pages/register.html",
+        {
+            "request": request,
+            "title": "Créer un compte - PAYsible",
+            "error": None,
+        },
+    )
+
+
+@router.post("/register", response_class=HTMLResponse)
+async def register_submit(
+    request: Request,
+    name: str = Form(""),
+    last_name: str = Form(""),
+    phone_number: str = Form(""),
+    address: str = Form(""),
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Crée un utilisateur (UserDB) à partir du formulaire.
+    Si l'email existe déjà → erreur.
+    Sinon → crée le user et redirige vers /login avec l'email pré-rempli.
+    """
+    email = (email or "").strip().lower()
+
+    if not email or len(email) > 255:
+        return templates.TemplateResponse(
+            "pages/register.html",
+            {
+                "request": request,
+                "title": "Créer un compte - PAYsible",
+                "error": "Veuillez saisir une adresse e-mail valide.",
+            },
+        )
+
+    # Vérifier si un user existe déjà pour cet email
+    existing = db.query(UserDB).filter(UserDB.email == email).first()
+    if existing:
+        return templates.TemplateResponse(
+            "pages/register.html",
+            {
+                "request": request,
+                "title": "Créer un compte - PAYsible",
+                "error": "Un compte existe déjà avec cet e-mail. Veuillez vous connecter.",
+            },
+        )
+
+    # Création du user
+    user = UserDB(
+        name=(name or "").strip() or None,
+        last_name=(last_name or "").strip() or None,
+        phone_number=(phone_number or "").strip() or None,
+        address=(address or "").strip() or None,
+        email=email,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # On ne le connecte pas d'office : on le renvoie au login avec un message
+    return templates.TemplateResponse(
+        "pages/login.html",
+        {
+            "request": request,
+            "title": "Connexion - PAYsible",
+            "user_email": user.email,
+            "error": None,
+            "info": "Compte créé avec succès. Vous pouvez maintenant vous connecter.",
+        },
+    )
+
 
 @router.get("/logout")
 async def logout(request: Request):
