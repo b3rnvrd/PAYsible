@@ -54,7 +54,7 @@ L'application suit une architecture MVC modulaire séparant les routes Web (rend
 
 ### Authentification & Sécurité
 * **Login simplifié :** Vérification de l'existence de l'email en base de données.
-* * **Ajout d'un utilisateur :** Possibilité de créer un utilisateur
+* **Ajout d'un utilisateur :** Possibilité de créer un utilisateur
 
 ### Gestion des Comptes
 * **Visualisation :** Tableau de bord avec solde total cumulé et détail par compte.
