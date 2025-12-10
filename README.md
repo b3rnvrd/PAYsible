@@ -66,6 +66,7 @@ L'application suit une architecture MVC modulaire séparant les routes Web (rend
 * **Historique :** Liste des dernières transactions avec statuts (Complété/En attente).
 * **Bénéficiaires :** Ajout, modification et suppression de bénéficiaires pour les virements.
 * **Calcul de Solde :** Solde calculé dynamiquement (voir section Logique Comptable).
+* **Virement entre utilisateurs :** Deux utilisateurs différents peuvent se faire des virements.
 
 ### Paramètres
 * **Profil Utilisateur :** Modification des informations personnelles (Nom, Tél, Adresse).
