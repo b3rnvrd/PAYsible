@@ -6,10 +6,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from datetime import datetime
 import json
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.models.user import UserDB
 
 from app.core.database import get_db
 from app.core.dependencies import get_user_email_from_session
@@ -18,6 +14,7 @@ from app.core.dependencies import get_user_email_from_session
 from app.models.user import UserDB
 from app.models.account import AccountDB
 from app.models.transaction import TransactionDB, TransactionEntryDB
+from app.models.beneficiary import BeneficiaryDB
 
 router = APIRouter(tags=["Web Pages"])
 templates = Jinja2Templates(directory="templates")
