@@ -53,8 +53,10 @@ L'application suit une architecture MVC modulaire séparant les routes Web (rend
 ## Fonctionnalités
 
 ### Authentification & Sécurité
-* **Login simplifié :** Vérification de l'existence de l'email en base de données.
-* **Ajout d'un utilisateur :** Possibilité de créer un utilisateur
+* Saisie de l’adresse e-mail pour accéder à l’espace utilisateur.
+* Vérification automatique de l’existence de l’adresse e-mail en base de données.
+* Message d’erreur si aucun compte n’est associé à l’e-mail saisi.
+* Bouton "Ajouter un compte" redirigeant vers la page d’inscription.
 
 ### Gestion des Comptes
 * **Visualisation :** Tableau de bord avec solde total cumulé et détail par compte.
