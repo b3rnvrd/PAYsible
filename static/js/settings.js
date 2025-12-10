@@ -23,6 +23,7 @@ class SettingsNavigation {
         this.navLinks = document.querySelectorAll('.settings-nav .nav-link');
         this.sections = document.querySelectorAll('.settings-section');
         this.init();
+        this.handleUrlHash();
     }
 
     init() {
@@ -41,6 +42,19 @@ class SettingsNavigation {
         // Afficher la section correspondante
         const sectionId = link.getAttribute('data-section');
         this.showSection(sectionId);
+    }
+
+    handleUrlHash() {
+        // Récupère le hash de l'URL : #profile, #accounts, #app-settings, etc.
+        const hash = window.location.hash.replace('#', '');
+        
+        if (hash) {
+            const link = document.querySelector('.settings-nav a[data-section="' + hash + '"]');
+            if (link) {
+                // On simule un clic sur l'onglet correspondant
+                link.click();
+            }
+        }
     }
 
     showSection(sectionId) {

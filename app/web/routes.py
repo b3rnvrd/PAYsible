@@ -179,6 +179,19 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     pie_labels = [e[0] for e in expenses]
     pie_data = [abs(float(e[1])) for e in expenses]
 
+    # Créer une version JSON pour le JavaScript
+    accounts_data_json = json.dumps([
+        {
+            "id": acc["id"],
+            "type": acc["type"],
+            "iban": acc["iban"],
+            "balance": acc["balance"],
+            "labels": json.loads(acc["labels"]),
+            "data": json.loads(acc["data"])
+        }
+        for acc in accounts_charts_data
+    ])
+
     return templates.TemplateResponse(
         "pages/dashboard.html",
         {
@@ -186,6 +199,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "user_email": user.email,
             "total_balance": f"{current_global_balance:,.2f}",
             "accounts_data": accounts_charts_data,
+            "accounts_data_json": accounts_data_json,
             "chart_pie_labels": json.dumps(pie_labels),
             "chart_pie_data": json.dumps(pie_data)
         }
