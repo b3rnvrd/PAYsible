@@ -19,6 +19,12 @@
     --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Smooth scroll pour la navigation par ancres */
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 100px; /* Espace en haut lors du scroll vers ancre */
+}
+
 /* ===================================
    Styles généraux
    =================================== */
