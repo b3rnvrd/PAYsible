@@ -690,7 +690,7 @@ async def virement_beneficiaire_submit(
     # Créer l'entrée de débit
     entry_debit = TransactionEntryDB(
         amount=-montant,
-        type="Debit",
+        type="DEBIT",
         description=f"Virement vers {beneficiaire.name} - {beneficiaire.iban}",
         account_id=compte_debit,
         transaction_id=new_transaction.id
