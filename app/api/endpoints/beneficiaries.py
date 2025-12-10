@@ -1,70 +1,107 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session
 from typing import List
 
-# 1. On importe la session de DB
 from app.core.database import get_db
 
-# 2. On importe les Modèles SQL (DB) et Pydantic (Schemas)
+# Modèles
 from app.models.beneficiary import (
     BeneficiaryDB, 
     BeneficiaryCreate, 
     BeneficiaryUpdate, 
     BeneficiaryResponse
 )
-# On a besoin du modèle Account pour rattacher le bénéficiaire à un compte existant
 from app.models.account import AccountDB 
+from app.models.user import UserDB 
 
 router = APIRouter()
+
+# --- FONCTION UTILITAIRE ---
+def get_current_user_from_session(request: Request, db: Session):
+    """Récupère l'utilisateur SQL depuis l'email stocké en session."""
+    user_email = request.session.get("user_email")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    
+    user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Utilisateur inconnu")
+    return user
+
 
 # --- ROUTES ---
 
 @router.get("/", response_model=List[BeneficiaryResponse])
-def get_beneficiaries(db: Session = Depends(get_db)):
-    """Récupère tous les bénéficiaires dans la base de données SQL."""
-    return db.query(BeneficiaryDB).all()
+def get_beneficiaries(request: Request, db: Session = Depends(get_db)):
+    """Récupère uniquement les bénéficiaires des comptes de l'utilisateur connecté."""
+    user = get_current_user_from_session(request, db)
+    
+    # Jointure pour trouver les bénéficiaires liés aux comptes de cet utilisateur
+    beneficiaries = (
+        db.query(BeneficiaryDB)
+        .join(AccountDB)
+        .filter(AccountDB.user_id == user.id)
+        .all()
+    )
+    return beneficiaries
+
 
 @router.post("/", response_model=BeneficiaryResponse, status_code=status.HTTP_201_CREATED)
-def create_beneficiary(beneficiary: BeneficiaryCreate, db: Session = Depends(get_db)):
-    """Ajoute un bénéficiaire dans la base de données."""
+def create_beneficiary(
+    beneficiary: BeneficiaryCreate, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    """Crée un bénéficiaire rattaché au premier compte de l'utilisateur."""
+    user = get_current_user_from_session(request, db)
     
-    # --- LOGIQUE TEMPORAIRE (En attendant l'Authentification) ---
-    # Un bénéficiaire doit appartenir à un compte.
-    # Comme on n'est pas encore logué, on va tout rattacher au compte ID 1.
+    # On cherche un compte auquel rattacher ce bénéficiaire
+    # (Simplification : on prend le premier compte trouvé)
+    account = db.query(AccountDB).filter(AccountDB.user_id == user.id).first()
     
-    # 1. Vérifier si le compte ID 1 existe, sinon le créer pour éviter un crash
-    account = db.query(AccountDB).filter(AccountDB.id == 1).first()
     if not account:
-        # On crée un compte "fictif" pour le développement
-        # Note: Idéalement il faudrait aussi un User ID 1, mais SQLite est permissif par défaut
-        fake_account = AccountDB(id=1, type="Courant", iban="FR76DEFAULTUSER", user_id=1)
-        db.add(fake_account)
-        db.commit()
+        raise HTTPException(
+            status_code=400, 
+            detail="Vous devez avoir au moins un compte bancaire pour ajouter des bénéficiaires."
+        )
 
-    # 2. Création du bénéficiaire
-    # On utilise les données reçues (name, iban) et on force l'account_id à 1
+    # Création
     db_beneficiary = BeneficiaryDB(
         name=beneficiary.name,
         iban=beneficiary.iban,
-        account_id=1 
+        account_id=account.id 
     )
     
-    db.add(db_beneficiary)     # Ajouter à la session
-    db.commit()                # Sauvegarder en DB
-    db.refresh(db_beneficiary) # Recharger pour avoir l'ID généré et l'account_id
+    db.add(db_beneficiary)
+    db.commit()
+    db.refresh(db_beneficiary)
     
     return db_beneficiary
 
+
 @router.patch("/{id}/", response_model=BeneficiaryResponse)
-def update_beneficiary(id: int, beneficiary_update: BeneficiaryUpdate, db: Session = Depends(get_db)):
-    """Met à jour un bénéficiaire existant."""
-    # 1. Chercher en DB
-    db_beneficiary = db.query(BeneficiaryDB).filter(BeneficiaryDB.id == id).first()
+def update_beneficiary(
+    id: int, 
+    beneficiary_update: BeneficiaryUpdate, 
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Met à jour un bénéficiaire (vérifie l'appartenance)."""
+    user = get_current_user_from_session(request, db)
+    
+    # On cherche le bénéficiaire en vérifiant qu'il appartient bien à un compte de l'user
+    db_beneficiary = (
+        db.query(BeneficiaryDB)
+        .join(AccountDB)
+        .filter(BeneficiaryDB.id == id)
+        .filter(AccountDB.user_id == user.id)  # Sécurité critique
+        .first()
+    )
     
     if not db_beneficiary:
-        raise HTTPException(status_code=404, detail="Bénéficiaire non trouvé")
+        raise HTTPException(status_code=404, detail="Bénéficiaire non trouvé ou accès refusé")
     
-    # 2. Mettre à jour uniquement les champs fournis
+    # Mise à jour des champs
     update_data = beneficiary_update.dict(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_beneficiary, key, value)
@@ -73,13 +110,22 @@ def update_beneficiary(id: int, beneficiary_update: BeneficiaryUpdate, db: Sessi
     db.refresh(db_beneficiary)
     return db_beneficiary
 
+
 @router.delete("/{id}/", status_code=status.HTTP_204_NO_CONTENT)
-def delete_beneficiary(id: int, db: Session = Depends(get_db)):
-    """Supprime un bénéficiaire de la DB."""
-    db_beneficiary = db.query(BeneficiaryDB).filter(BeneficiaryDB.id == id).first()
+def delete_beneficiary(id: int, request: Request, db: Session = Depends(get_db)):
+    """Supprime un bénéficiaire (vérifie l'appartenance)."""
+    user = get_current_user_from_session(request, db)
+    
+    db_beneficiary = (
+        db.query(BeneficiaryDB)
+        .join(AccountDB)
+        .filter(BeneficiaryDB.id == id)
+        .filter(AccountDB.user_id == user.id)
+        .first()
+    )
     
     if not db_beneficiary:
-        raise HTTPException(status_code=404, detail="Bénéficiaire non trouvé")
+        raise HTTPException(status_code=404, detail="Bénéficiaire non trouvé ou accès refusé")
     
     db.delete(db_beneficiary)
     db.commit()

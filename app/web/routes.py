@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from datetime import datetime
 import json
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.models.user import UserDB
 
 from app.core.database import get_db
 from app.core.dependencies import get_user_email_from_session
@@ -187,11 +191,42 @@ async def login_page(request: Request):
     return templates.TemplateResponse("pages/login.html", {"request": request, "user_email": get_user_email_from_session(request)})
 
 @router.post("/login", response_class=HTMLResponse)
-async def login_submit(request: Request, email: str = Form(...)):
+async def login_submit(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+    """
+    Traite la soumission du formulaire de login.
+    - Si email vide → on réaffiche la page avec un message d'erreur.
+    - Sinon → on stocke l'email en session puis on redirige vers l'accueil.
+    """
     email = email.strip()
     if not email:
-        return templates.TemplateResponse("pages/login.html", {"request": request, "error": "Email requis"})
-    request.session["user_email"] = email
+        return templates.TemplateResponse(
+            "pages/login.html",
+            {
+                "request": request,
+                "title": "Connexion - PAYsible",
+                "user_email": "",
+                "error": "Veuillez saisir une adresse e-mail.",
+            },
+        )
+    
+    user = db.query(UserDB).filter(UserDB.email == email).first()
+    
+    if not user:
+        return templates.TemplateResponse(
+            "pages/login.html",
+            {
+                "request": request,
+                "title": "Connexion - PAYsible",
+                "user_email": email,
+                "error": "Aucun compte trouvé avec cet email. Essayez : client@paysible.com",
+            },
+        )
+
+    # Stockage de l'email dans la session (auth simplifiée)
+    if hasattr(request, "session"):
+        request.session["user_email"] = email
+
+    # Redirection vers la page d'accueil après connexion
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 @router.get("/logout")
@@ -256,6 +291,54 @@ async def view_soldes(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/beneficiaries", response_class=HTMLResponse)
 def view_beneficiaries(request: Request):
-    user_email = get_user_email_from_session(request)
-    if not user_email: return RedirectResponse(url="/login")
-    return templates.TemplateResponse("pages/beneficiaries.html", {"request": request, "user_email": user_email})
+    """
+    Affiche la page des bénéficiaires pour l'utilisateur connecté.
+    """
+    # 1. Récupération de l'utilisateur depuis la session
+    user_email = request.session.get("user_email")
+
+    # 2. Si pas connecté, redirection vers le login
+    if not user_email:
+         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    # 3. Affichage du template avec le bon contexte
+    return templates.TemplateResponse(
+        "pages/beneficiaries.html", 
+        {
+            "request": request, 
+            "user_email": user_email
+        }
+    )
+
+
+@router.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """
+    Affiche la page des paramètres utilisateur.
+    """
+    user_email = None
+    if hasattr(request, "session"):
+        user_email = request.session.get("user_email")
+
+    # Vérifier si l'utilisateur est connecté
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    return templates.TemplateResponse(
+        "pages/settings.html",
+        {
+            "request": request,
+            "title": "Paramètres - PAYsible",
+            "user_email": user_email,
+        },
+    )
+
+@router.get("/test-500")
+def test_error_500():
+    """
+    Cette route provoque volontairement une erreur pour tester le template 500.html.
+    """
+    # Une division par zéro lève une exception "ZeroDivisionError",
+    # ce qui est considéré comme une erreur serveur (code 500).
+    result = 1 / 0
+    return result
