@@ -149,12 +149,6 @@ class AccountsManager {
         if (btnCreate) {
             btnCreate.addEventListener('click', () => this.createAccount());
         }
-
-        // Bouton de mise à jour
-        const btnUpdate = document.getElementById('btn-update-account');
-        if (btnUpdate) {
-            btnUpdate.addEventListener('click', () => this.updateAccount());
-        }
     }
 
     async loadAccounts() {
@@ -212,12 +206,11 @@ class AccountsManager {
         const formData = new FormData(form);
         
         const data = {
-            label: formData.get('label'),
             type: formData.get('type')
         };
         
-        if (!data.label || !data.type) {
-            alert('Veuillez remplir tous les champs.');
+        if (!data.type) {
+            alert('Veuillez sélectionner un type de compte.');
             return;
         }
         
@@ -243,46 +236,9 @@ class AccountsManager {
         }
     }
 
-    editAccount(accountId, currentLabel) {
-        document.getElementById('edit_account_id').value = accountId;
-        document.getElementById('edit_account_label').value = currentLabel;
-        
-        const modal = new bootstrap.Modal(this.editModal);
-        modal.show();
-    }
-
-    async updateAccount() {
-        const accountId = document.getElementById('edit_account_id').value;
-        const newLabel = document.getElementById('edit_account_label').value;
-        
-        if (!newLabel) {
-            alert('Veuillez saisir un nom pour le compte.');
-            return;
-        }
-        
-        try {
-            const response = await fetch(API_CONFIG.ENDPOINTS.ACCOUNT_DETAIL(accountId), {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ label: newLabel })
-            });
-            
-            if (response.ok) {
-                this.closeModal(this.editModal);
-                this.loadAccounts();
-                AlertManager.show(this.alertDiv, 'success', 'Compte modifié avec succès !');
-            } else {
-                alert('Erreur lors de la modification du compte.');
-            }
-        } catch (error) {
-            alert('Erreur de connexion au serveur.');
-        }
-    }
-
-    async deleteAccount(accountId, accountLabel) {
-        if (!confirm(`Êtes-vous sûr de vouloir clôturer le compte "${accountLabel}" ?`)) {
+    async deleteAccount(accountId, accountType) {
+        const typeLabel = accountType === 'CHECKING' ? 'Courant' : 'Épargne';
+        if (!confirm(`Êtes-vous sûr de vouloir clôturer ce compte ${typeLabel} ?`)) {
             return;
         }
         
@@ -351,7 +307,7 @@ class AccountsManager {
                 <div class="card account-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="card-title mb-0">${this.escapeHtml(account.label)}</h6>
+                            <h6 class="card-title mb-0">Compte ${typeLabel}</h6>
                             <span class="account-badge ${typeClass} text-white">
                                 ${typeLabel}
                             </span>
@@ -369,12 +325,8 @@ class AccountsManager {
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-primary" 
-                                    onclick="accountsManager.editAccount(${account.id}, '${this.escapeHtml(account.label)}')">
-                                <i class="bi bi-pencil"></i> Renommer
-                            </button>
                             <button class="btn btn-sm btn-outline-danger" 
-                                    onclick="accountsManager.deleteAccount(${account.id}, '${this.escapeHtml(account.label)}')">
+                                    onclick="accountsManager.deleteAccount(${account.id}, '${account.type}')">
                                 <i class="bi bi-trash"></i> Clôturer
                             </button>
                         </div>
@@ -386,17 +338,6 @@ class AccountsManager {
                 </div>
             </div>
         `;
-    }
-
-    escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
     }
 }
 

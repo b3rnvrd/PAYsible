@@ -20,11 +20,10 @@ router = APIRouter(
 
 # Schémas Pydantic
 class AccountCreate(BaseModel):
-    label: str
     type: str  # CHECKING ou SAVINGS
 
 class AccountUpdate(BaseModel):
-    label: str
+    label: Optional[str] = None
 
 class AccountResponse(BaseModel):
     id: int
@@ -113,10 +112,13 @@ async def create_account(account: AccountCreate, request: Request, db: Session =
     db.commit()
     db.refresh(new_account)
     
+    # Convertir le type de la DB vers le format API
+    api_type = "CHECKING" if account_type == "Courant" else "SAVINGS"
+    
     return AccountResponse(
         id=new_account.id,
-        label=account.label,
-        type=account.type,  # Retourner le type demandé (CHECKING/SAVINGS)
+        label=f"Compte {account_type}",
+        type=api_type,
         iban=new_account.iban,
         created_at=datetime.now().isoformat(),
         is_active=True
