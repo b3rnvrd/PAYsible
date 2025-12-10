@@ -16,7 +16,7 @@
 6. [Structure du Projet](#-structure-du-projet)
 7. [Documentation API](#-documentation-api)
 8. [Répartition des tâches](#-Répartition-des-tâches)
-9.[Roadmap Technique](#-Roadmap-Technique)
+9. [Roadmap Technique](#-Roadmap-Technique)
 10. [Auteurs](#-auteurs)
 
 ---
