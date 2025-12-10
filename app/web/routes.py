@@ -121,57 +121,83 @@ async def homepage(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse("index.html", {"request": request, "user_email": None})
 
+# Dans app/web/routes.py
 
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
-    """Page Dashboard complète avec graphiques."""
+    """Page Dashboard détaillée avec un graphique par compte."""
     user_email = get_user_email_from_session(request)
     if not user_email:
         return RedirectResponse(url="/login")
 
     user = db.query(UserDB).filter(UserDB.email == user_email).first()
+    
+    # Données globales
+    current_global_balance = 0.0
+    accounts_charts_data = []
+
+    # On boucle sur CHAQUE compte pour préparer ses données spécifiques
+    for account in user.accounts:
+        # 1. Récupérer le solde actuel de ce compte
+        balance = get_account_balance(db, account.id)
+        current_global_balance += balance
+
+        # 2. Récupérer l'historique spécifique à CE compte (ID)
+        entries = db.query(TransactionEntryDB)\
+            .join(TransactionDB)\
+            .filter(TransactionEntryDB.account_id == account.id)\
+            .order_by(TransactionDB.date.desc())\
+            .limit(20).all() # 20 derniers mouvements
+        
+        # 3. Reconstruire l'évolution du solde (Inversement temporel)
+        dates = []
+        history_values = []
+        temp_balance = balance
+
+        for entry in entries:
+            dates.append(entry.transaction.date.strftime("%d/%m"))
+            history_values.append(temp_balance)
+            temp_balance -= entry.amount # On inverse l'opération pour retrouver l'état précédent
+        
+        # On remet dans l'ordre chronologique (Vieux -> Récent)
+        dates.reverse()
+        history_values.reverse()
+
+        # Sécurité si le compte est vide/neuf (pour éviter un graph vide)
+        if not dates:
+            dates = [datetime.now().strftime("%d/%m")]
+            history_values = [balance]
+
+        # On ajoute les données de ce compte à la liste
+        accounts_charts_data.append({
+            "id": account.id,
+            "type": account.type, # Ex: "Courant", "Epargne"
+            "iban": account.iban,
+            "balance": f"{balance:,.2f}",
+            "labels": json.dumps(dates),       # Données JSON pour le JS
+            "data": json.dumps(history_values) # Données JSON pour le JS
+        })
+
+    # --- KPI Bonus: Dépenses globales par Catégorie (On garde celui-ci en global) ---
     user_account_ids = [acc.id for acc in user.accounts]
-
-    # --- KPI 1: Dépenses par Catégorie ---
-    expenses = db.query(TransactionEntryDB.description, func.sum(TransactionEntryDB.amount)) \
-        .filter(TransactionEntryDB.account_id.in_(user_account_ids), TransactionEntryDB.amount < 0) \
-        .group_by(TransactionEntryDB.description) \
+    expenses = db.query(TransactionEntryDB.description, func.sum(TransactionEntryDB.amount))\
+        .filter(TransactionEntryDB.account_id.in_(user_account_ids), TransactionEntryDB.amount < 0)\
+        .group_by(TransactionEntryDB.description)\
         .all()
+    
+    pie_labels = [e[0] for e in expenses]
+    pie_data = [abs(float(e[1])) for e in expenses]
 
-    labels_pie = [e[0] for e in expenses]
-    data_pie = [abs(float(e[1])) for e in expenses]
-
-    # --- KPI 2: Evolution du Solde ---
-    current_global_balance = sum(get_account_balance(db, acc.id) for acc in user.accounts)
-
-    last_transactions = db.query(TransactionEntryDB) \
-        .join(TransactionDB) \
-        .filter(TransactionEntryDB.account_id.in_(user_account_ids)) \
-        .order_by(TransactionDB.date.desc()) \
-        .limit(20).all()
-
-    balance_history = []
-    dates_history = []
-    temp_balance = current_global_balance
-
-    for entry in last_transactions:
-        balance_history.append(temp_balance)
-        dates_history.append(entry.transaction.date.strftime("%d/%m"))
-        temp_balance -= entry.amount
-
-    balance_history.reverse()
-    dates_history.reverse()
-
+    # On envoie "accounts_data" au template (C'est la clé qui manquait !)
     return templates.TemplateResponse(
         "pages/dashboard.html",
         {
             "request": request,
             "user_email": user.email,
-            "chart_pie_labels": json.dumps(labels_pie),
-            "chart_pie_data": json.dumps(data_pie),
-            "chart_line_labels": json.dumps(dates_history),
-            "chart_line_data": json.dumps(balance_history),
-            "total_balance": f"{current_global_balance:,.2f}"
+            "total_balance": f"{current_global_balance:,.2f}",
+            "accounts_data": accounts_charts_data, 
+            "chart_pie_labels": json.dumps(pie_labels),
+            "chart_pie_data": json.dumps(pie_data)
         }
     )
 

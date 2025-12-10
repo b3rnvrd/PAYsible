@@ -4,61 +4,53 @@
 
 {% block content %}
 <div class="container py-5 fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
             <h2 class="section-title mb-0"><i class="bi bi-speedometer2"></i> Tableau de Bord</h2>
-            <p class="text-muted">Analyse de vos finances personnelles</p>
+            <p class="text-muted">Vue détaillée de vos actifs</p>
         </div>
         <div class="text-end">
-            <h4 class="text-primary-paysible mb-0">Solde Global</h4>
-            <span class="fs-3 fw-bold">{{ total_balance }} €</span>
+            <h6 class="text-muted text-uppercase small mb-1">Patrimoine Total</h6>
+            <h2 class="text-primary-paysible fw-bold mb-0">{{ total_balance }} €</h2>
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row">
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold text-primary-paysible">
-                        <i class="bi bi-graph-up-arrow"></i> Évolution du Solde
-                    </h5>
+            <h4 class="mb-4 text-primary-paysible"><i class="bi bi-graph-up"></i> Évolution par Compte</h4>
+            
+            {% for account in accounts_data %}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-primary-paysible me-2">{{ account.type }}</span>
+                        <small class="text-muted font-monospace">{{ account.iban }}</small>
+                    </div>
+                    <span class="fw-bold fs-5">{{ account.balance }} €</span>
                 </div>
                 <div class="card-body">
-                    <canvas id="balanceChart" height="300"></canvas>
+                    <canvas id="chart-account-{{ account.id }}" height="100"></canvas>
                 </div>
             </div>
+            {% endfor %}
+            
+            {% if not accounts_data %}
+            <div class="alert alert-info">Aucune donnée de compte disponible.</div>
+            {% endif %}
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold text-primary-paysible">
-                        <i class="bi bi-pie-chart-fill"></i> Répartition Dépenses
-                    </h5>
-                </div>
-                <div class="card-body d-flex flex-column justify-content-center">
-                    <div style="max-height: 300px; position: relative;">
+            <h4 class="mb-4 text-primary-paysible"><i class="bi bi-pie-chart"></i> Répartition Globale</h4>
+            
+            <div class="card shadow-sm border-0 mb-4 sticky-top" style="top: 100px; z-index: 1;">
+                <div class="card-body">
+                    <h6 class="card-title text-center mb-4">Où va votre argent ?</h6>
+                    <div style="position: relative; height: 300px;">
                         <canvas id="expensesChart"></canvas>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card bg-gradient-paysible text-white shadow-sm border-0">
-                <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap">
-                    <div>
-                        <h4 class="fw-bold">Besoin d'effectuer un virement ?</h4>
-                        <p class="mb-0 opacity-75">Gérez vos bénéficiaires et transférez de l'argent en quelques clics.</p>
-                    </div>
-                    <div class="mt-3 mt-md-0">
-                        <a href="/beneficiaries" class="btn btn-light text-primary fw-bold me-2">
-                            <i class="bi bi-people"></i> Bénéficiaires
-                        </a>
-                        <a href="/" class="btn btn-outline-light fw-bold">
-                            <i class="bi bi-arrow-left-right"></i> Faire un virement
+                    <div class="mt-4 text-center">
+                        <a href="/soldes" class="btn btn-outline-primary btn-sm rounded-pill">
+                            Voir le détail des transactions
                         </a>
                     </div>
                 </div>
@@ -72,76 +64,63 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // --- Configuration des couleurs PAYsible ---
-    const colors = {
-        primary: '#1D3D6A',
-        secondary: '#38A5E4',
-        gold: '#F4C448',
-        blueLight: '#2474C6',
-        danger: '#dc3545',
-        palette: ['#1D3D6A', '#38A5E4', '#F4C448', '#2474C6', '#6610f2', '#e83e8c', '#fd7e14', '#20c997']
+    // Configuration commune pour le style
+    const commonOptions = {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false } },
+            y: { grid: { borderDash: [5, 5] } }
+        },
+        elements: {
+            line: { tension: 0.4 }, // Courbes douces
+            point: { radius: 3, hoverRadius: 6 }
+        }
     };
 
-    // --- 1. Graphique Évolution (Line Chart) ---
-    const ctxLine = document.getElementById('balanceChart').getContext('2d');
-    const balanceChart = new Chart(ctxLine, {
-        type: 'line',
-        data: {
-            labels: JSON.parse('{{ chart_line_labels | safe }}'),
-            datasets: [{
-                label: 'Solde cumulé (€)',
-                data: JSON.parse('{{ chart_line_data | safe }}'),
-                borderColor: colors.secondary,
-                backgroundColor: 'rgba(56, 165, 228, 0.1)',
-                borderWidth: 3,
-                tension: 0.4, // Courbe lisse
-                fill: true,
-                pointBackgroundColor: colors.primary,
-                pointRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+    // --- 1. Génération automatique des graphiques via la boucle Jinja ---
+    {% for account in accounts_data %}
+        new Chart(document.getElementById('chart-account-{{ account.id }}').getContext('2d'), {
+            type: 'line',
+            data: {
+                // On utilise | safe pour injecter le JSON généré par Python
+                labels: JSON.parse('{{ account.labels | safe }}'),
+                datasets: [{
+                    label: 'Solde (€)',
+                    data: JSON.parse('{{ account.data | safe }}'),
+                    borderColor: '#38A5E4', 
+                    backgroundColor: 'rgba(56, 165, 228, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointBackgroundColor: '#1D3D6A'
+                }]
             },
-            scales: {
-                y: {
-                    grid: { borderDash: [5, 5] },
-                    ticks: { callback: function(value) { return value + ' €'; } }
-                },
-                x: {
-                    grid: { display: false }
-                }
-            }
-        }
-    });
+            options: commonOptions
+        });
+    {% endfor %}
 
-    // --- 2. Graphique Dépenses (Doughnut Chart) ---
-    const ctxPie = document.getElementById('expensesChart').getContext('2d');
-    const expensesChart = new Chart(ctxPie, {
-        type: 'doughnut',
-        data: {
-            labels: JSON.parse('{{ chart_pie_labels | safe }}'),
-            datasets: [{
-                data: JSON.parse('{{ chart_pie_data | safe }}'),
-                backgroundColor: colors.palette,
-                borderWidth: 2,
-                borderColor: '#ffffff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { boxWidth: 15, padding: 15 }
-                }
+    // --- 2. Graphique Camembert Global ---
+    const ctxPie = document.getElementById('expensesChart');
+    if (ctxPie) {
+        new Chart(ctxPie.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: JSON.parse('{{ chart_pie_labels | safe }}'),
+                datasets: [{
+                    data: JSON.parse('{{ chart_pie_data | safe }}'),
+                    backgroundColor: ['#1D3D6A', '#38A5E4', '#F4C448', '#2474C6', '#6610f2', '#20c997', '#dc3545'],
+                    borderWidth: 0
+                }]
             },
-            cutout: '60%' // Taille du trou central
-        }
-    });
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } }
+                },
+                cutout: '70%'
+            }
+        });
+    }
 </script>
 {% endblock %}
