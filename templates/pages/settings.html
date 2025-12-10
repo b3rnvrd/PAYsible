@@ -6,11 +6,7 @@
 <link rel="stylesheet" href="{{ request.url_for('static', path='css/settings.css') }}">
 {% endblock %}
 
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ request.url_for('static', path='js/settings.js') }}"></script>
-{% endblock %}
+{% block content %}
 <div class="container py-5">
     <div class="row">
         <!-- Navigation latérale -->
@@ -213,18 +209,4 @@
 
 {% block extra_js %}
 <script src="{{ request.url_for('static', path='js/settings.js') }}"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Récupère le hash de l'URL : #profile, #accounts, #app-settings, etc.
-    const hash = window.location.hash.replace('#', '');
-
-    if (hash) {
-        const link = document.querySelector('.settings-nav a[data-section="' + hash + '"]');
-        if (link) {
-            // On simule un clic sur l’onglet correspondant
-            link.click();
-        }
-    }
-});
-</script>
 {% endblock %}
