@@ -20,7 +20,7 @@
             <h4 class="mb-4 text-primary-paysible"><i class="bi bi-graph-up"></i> Évolution par Compte</h4>
             
             {% for account in accounts_data %}
-            <div class="card shadow-sm border-0 mb-4">
+            <div class="card shadow-sm border-0 mb-4" id="compte-{{ account.id }}">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <div>
                         <span class="badge bg-primary-paysible me-2">{{ account.type }}</span>
