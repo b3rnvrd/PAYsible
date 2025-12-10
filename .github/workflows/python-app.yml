@@ -35,6 +35,7 @@ jobs:
         
     - name: Test with pytest
       run: |
+        export PYTHONPATH=$PYTHONPATH:.
         pytest
         
     # --- NOUVELLE ÉTAPE : Test de lancement ---
