@@ -1,12 +1,39 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: paysible
+      POSTGRES_USER: paysible
+      POSTGRES_PASSWORD: paysible
+    volumes:
+      - paysible_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paysible -d paysible"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - paysible_net
+
   web:
     build: .
-    container_name: paysible_container
     ports:
       - "8000:8000"
     volumes:
       - .:/app
     environment:
-      # Force uvicorn à bien détecter les changements de fichiers dans Docker
       - WATCHFILES_FORCE_POLLING=true
+      - DATABASE_URL=postgresql+psycopg2://paysible:paysible@db:5432/paysible
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - paysible_net
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  paysible_db_data:
+
+networks:
+  paysible_net:
+    driver: bridge
