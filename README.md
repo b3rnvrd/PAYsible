@@ -52,7 +52,7 @@ L'application suit une architecture MVC modulaire séparant les routes Web (rend
 
 ## Fonctionnalités
 
-### Authentification & Sécurité
+### Identification & Sécurité
 * Saisie de l’adresse e-mail pour accéder à l’espace utilisateur.
 * Vérification automatique de l’existence de l’adresse e-mail en base de données.
 * Message d’erreur si aucun compte n’est associé à l’e-mail saisi.
