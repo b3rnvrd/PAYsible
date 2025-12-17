@@ -51,8 +51,6 @@ for u in created_users: db.refresh(u)
 print(f"✅ 3 Utilisateurs créés (Testez avec {created_users[0].email})")
 
 # --- 3. CRÉATION DES COMPTES ---
-# NOTE: IBAN Français = 'FR' + 25 chiffres = 27 caractères au total
-
 # Comptes pour Elon
 acc_courant = AccountDB(
     type="Courant", 
@@ -77,7 +75,7 @@ acc_jeff = AccountDB(
     user_id=created_users[1].id
 )
 
-# Compte pour Bernard (NOUVEAU pour permettre les tests complets)
+# Compte pour Bernard
 acc_bernard = AccountDB(
     type="Courant", 
     iban="FR7677777777777777777777777",
@@ -88,11 +86,11 @@ db.add_all([acc_courant, acc_epargne, acc_pro, acc_jeff, acc_bernard])
 db.commit()
 print("✅ 5 Comptes bancaires créés")
 
-# --- 3B. SOLDE DE DÉPART POSITIF (GARANTIE) ---
-INITIAL_BALANCE = 5000.00
+# --- 3B. SOLDE DE DÉPART SÉCURISÉ ---
+# Augmenté à 20 000€ pour garantir un solde positif malgré les dépenses
+INITIAL_BALANCE = 20000.00
 date_init = datetime.now() - timedelta(days=181)
 
-# On met du solde sur le compte principal de chaque utilisateur pour faciliter les tests
 comptes_a_crediter = [acc_courant, acc_jeff, acc_bernard]
 
 for compte in comptes_a_crediter:
@@ -133,7 +131,8 @@ descriptions_revenus = [
 ]
 
 for _ in range(40):
-    is_expense = random.random() > 0.2
+    # Ajusté à 0.3 (70% de dépenses) pour être un peu plus raisonnable
+    is_expense = random.random() > 0.3
     
     if is_expense:
         desc, min_amt, max_amt = random.choice(descriptions_depenses)
@@ -159,7 +158,7 @@ for _ in range(40):
     )
     db.add(entry)
 
-# Virements épargne Elon
+# Virements épargne Elon (6 mois x 500€ = -3000€)
 for i in range(6):
     date_t = datetime.now() - timedelta(days=i*30)
     txn_vir = TransactionDB(type="Virement Interne", amount=500.0, description="Epargne Mensuelle", date=date_t)
@@ -188,31 +187,23 @@ benefs_manual = [
 db.add_all(benefs_manual)
 db.commit()
 
-# --- 6. AJOUT AUTOMATIQUE DE BÉNÉFICIAIRES CROISÉS (NOUVEAU) ---
-# Chaque utilisateur aura tous les autres utilisateurs comme bénéficiaires
+# --- 6. AJOUT AUTOMATIQUE DE BÉNÉFICIAIRES CROISÉS ---
 print("🔄 Génération des bénéficiaires croisés...")
 
-# On rafraîchit les utilisateurs pour être sûr d'avoir leurs comptes liés
 all_users = db.query(UserDB).all()
 
 for user in all_users:
-    # On vérifie que l'utilisateur a au moins un compte pour y attacher des bénéficiaires
     if not user.accounts:
         continue
         
-    mon_compte_principal = user.accounts[0] # On attache au premier compte trouvé
+    mon_compte_principal = user.accounts[0]
     
     for other_user in all_users:
-        # On ne s'ajoute pas soi-même
         if user.id == other_user.id:
             continue
             
-        # On vérifie que l'autre utilisateur a un compte (pour récupérer son IBAN)
         if other_user.accounts:
             other_account = other_user.accounts[0]
-            
-            # Création du bénéficiaire
-            # Ex: Pour Elon, on crée "Jeff Bezos" avec l'IBAN de Jeff
             benef = BeneficiaryDB(
                 name=f"{other_user.name} {other_user.last_name}",
                 iban=other_account.iban,
