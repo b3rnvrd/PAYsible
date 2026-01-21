@@ -286,7 +286,3 @@ Objectif : déployer et orchestrer l’application dans un environnement distrib
   * Yannick Zheng
 
 <!-- end list -->
-
-### 11\.Ce qu'on a appris
-
-théo est un super leader !
